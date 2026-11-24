@@ -45,8 +45,9 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 
 **Next to build:** board, then analytics.
 
-**Keys still needed in `.env` to use everything:** `TAVILY_API_KEY`, `HUNTER_API_KEY` (Find email),
-`RESEND_API_KEY`, `DEMO_RECIPIENT` (Approve & send). Without them the screens show the plain
+**Keys:** `TAVILY_API_KEY`, `HUNTER_API_KEY` (Find email), `RESEND_API_KEY`, `DEMO_RECIPIENT`
+(Approve & send) are set in Rashmi's `.env` and tested live on Nov 24 (one Hunter lookup, one
+Tavily search, one test email to the demo inbox). Without them the screens show the plain
 "… is not set" message and nothing is sent.
 
 ---
@@ -233,6 +234,10 @@ uses Google's official SDK `@google/genai` (already installed) and `process.env.
 **Tavily (website, only if the lead has none).** `POST https://api.tavily.com/search` with header
 `Authorization: Bearer ${TAVILY_API_KEY}` and body `{ "query": "<company name> <city> VA official website" }`.
 Take the most likely company domain from the results, and say in `agentUnsure` that it's a guess.
+**Built with a stricter rule** (`lib/enrich.ts`): skip directories (LinkedIn, Bizapedia, …) and any
+`.gov` / `.mil` site, and only accept a domain that contains a distinctive word (or the initials) of
+the company name. Otherwise return "No website found". (A looser first version guessed `dia.mil`
+for a contractor; a wrong guess would show someone else's email.)
 
 **Hunter (email).** With the website's domain and the contact's name:
 - Find: `GET https://api.hunter.io/v2/email-finder?domain=<domain>&first_name=<first>&last_name=<last>&api_key=${HUNTER_API_KEY}`

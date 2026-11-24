@@ -15,6 +15,34 @@ const NOT_COMPANY_SITES =
 
 const domainOf = (url: string) => new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
 
+// Government sites are never a contractor's own website.
+const GOVERNMENT_SITE = /\.(gov|mil)$/i;
+
+// Words too common to prove a domain belongs to the company.
+const GENERIC_WORDS = new Set([
+  'llc', 'inc', 'corp', 'corporation', 'company', 'co', 'ltd', 'group', 'the', 'and', 'of',
+  'services', 'service', 'solutions', 'consulting', 'technologies', 'technology', 'tech',
+  'systems', 'global', 'international', 'associates', 'partners', 'enterprises', 'federal',
+]);
+
+/** Only trust a search result if its domain contains a distinctive word from the company name. */
+function domainMatchesCompany(domain: string, legalName: string): boolean {
+  const host = domain.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const words = legalName
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !GENERIC_WORDS.has(w));
+  if (words.some((w) => host.includes(w))) return true;
+  // Also accept initials, e.g. "Potomac Business Consulting" → "pbc".
+  const initials = legalName
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w && !['llc', 'inc', 'corp', 'ltd', 'co', 'the', 'and', 'of'].includes(w))
+    .map((w) => w[0])
+    .join('');
+  return initials.length >= 3 && host.includes(initials);
+}
+
 async function findWebsite(lead: Lead): Promise<string | null> {
   const key = process.env.TAVILY_API_KEY;
   if (!key) throw new MissingKeyError('TAVILY_API_KEY is not set in .env');
@@ -27,7 +55,12 @@ async function findWebsite(lead: Lead): Promise<string | null> {
   if (!res.ok) throw new Error(`Website search failed (${res.status})`);
   const data = await res.json();
   const urls: string[] = (data.results ?? []).map((r: { url?: string }) => r.url).filter(Boolean);
-  const own = urls.find((u) => !NOT_COMPANY_SITES.test(u));
+  // Skip directories and government sites, and only accept a domain that matches the company's name.
+  // Better to say "No website found" than to guess wrong and look up someone else's email.
+  const own = urls.find((u) => {
+    const domain = domainOf(u);
+    return !NOT_COMPANY_SITES.test(u) && !GOVERNMENT_SITE.test(domain) && domainMatchesCompany(domain, lead.legalName);
+  });
   return own ? `https://${domainOf(own)}` : null;
 }
 
