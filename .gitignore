@@ -156,5 +156,7 @@ vite.config.ts.timestamp-*
 .nx/workspace-data
 .nx/migrate-runs
 
-# Real SAM.gov data: never push (personal info, no bulk export). Lives locally only.
+# Real SAM.gov data: never push (personal info, no bulk export). Lives locally and in Moss.
 data/
+docs/sample_lead.csv
+.DS_Store

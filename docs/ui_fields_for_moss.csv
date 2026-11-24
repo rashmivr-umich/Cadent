@@ -1,0 +1,31 @@
+field,screen,how_it_shows,also_in_moss,notes
+legalName,"Leads table, lead detail, approval queue, board card",Company name (main text),Searchable text,-
+dbaName,"Leads table, lead detail",Small grey line under the company name,Searchable text,Hide if empty
+city,"Leads table, lead detail","Shown as ""City, ST""",Searchable text,-
+state,"Leads table, lead detail","Shown as ""City, ST""",Filter,Use as a Moss filter, not search text
+primaryNaics,Leads table,Industry name (description of the code),Searchable text,Show the plain name, code in a tooltip
+naicsList,Lead detail,List of all industry codes with names,Searchable text (descriptions only),-
+productsAndServices,Lead detail,What they sell,Searchable text,Hide if empty (empty for many leads)
+businessTypes,Lead detail,Small tags,Searchable text,Never use in emails
+daysToExpiry,"Leads table, lead detail","""Expires in N days""",Filter,Main 'why now'; changes daily
+registrationExpirationDate,"Lead detail, approval queue",Exact expiry date,No,-
+registrationDate,Lead detail,First registered date,No,-
+registrationStatus,Lead detail,Status badge,No,-
+lastUpdateDate,Lead detail,"""Data freshness"" line",No,-
+signals,"Leads table, lead detail, approval queue",Plain-language reasons to reach out now,No,-
+fitScore,"Leads table, lead detail",Number 0–100,No,Shown together with tier
+tier,"Leads table, board card",Badge A / B / C,Filter,-
+scoreReasons,Lead detail,Short reasons behind the score,No,Can also go in Agent thinking panel
+samSourceUrl,"Leads table, lead detail, approval queue",Source link icon,No,Confirm link format works
+website,Lead detail,Link,No,"""No website found"" if empty"
+contactName,"Lead detail, approval queue",Name of person to email,No,-
+contactTitle,"Lead detail, approval queue",Job title next to name,No,-
+email,"Lead detail, approval queue",Email address,No,From Hunter
+emailStatus,"Leads table, approval queue",Badge: verified / risky / unknown,No,From Hunter
+draftSubject,Approval queue,Email subject,No,-
+draftBody,Approval queue,Email body,No,-
+agentUnsure,Approval queue,"""What I'm unsure about"" line",No,-
+stage,Board card,Which column the card is in,No,-
+stageHistory,Board card,Who moved it (AI or person) and when,No,-
+matchScore,Leads table,Not shown; sorts results after a Moss search,No,From Moss
+creditsUsed,Header,Credit counter,No,Flexprice bonus only

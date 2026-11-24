@@ -2,16 +2,32 @@
   "name": "cadent",
   "version": "0.1.0",
   "private": true,
+  "description": "Surfaces gov contractors approaching key compliance deadlines so consultants can reach out at the right moment",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rashmivr-umich/Cadent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rashmivr-umich/Cadent/issues"
+  },
+  "homepage": "https://github.com/rashmivr-umich/Cadent#readme",
+  "license": "ISC",
+  "directories": {
+    "doc": "docs"
+  },
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "next build",
-    "start": "next start -p 3100"
+    "start": "next start -p 3100",
+    "test": "node --test lib/*.test.mjs"
   },
   "dependencies": {
     "@coinbase/cds-icons": "^5",
     "@coinbase/cds-illustrations": "^4",
     "@coinbase/cds-web": "^9",
     "@google/genai": "^3.6.1",
+    "@moss-js/moss": "^1.26.0",
     "framer-motion": "^10",
     "next": "15.4.8",
     "react": "19.1.2",
