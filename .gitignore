@@ -160,3 +160,4 @@ vite.config.ts.timestamp-*
 data/
 docs/sample_lead.csv
 .DS_Store
+lead.example.json

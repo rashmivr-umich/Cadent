@@ -1,7 +1,7 @@
 // Front-end API client: the only place screens talk to the server.
 // Endpoint names follow docs/FRONTEND_HANDOFF.md Part 3 (GET /api/leads, POST /api/leads/[id]/enrich, ...).
 // If an endpoint isn't there yet (or fails / 404s), we fall back to sample data read from
-// lead.example.json and flag it as sample data, so screens can show a "Sample data" note.
+// data/lead.example.json and flag it as sample data, so screens can show a "Sample data" note.
 
 import type {
   DraftResponse,
@@ -46,7 +46,7 @@ export async function getSamCounts(): Promise<Record<string, number>> {
   }
 }
 
-// ---------- Sample data (only from lead.example.json) ----------
+// ---------- Sample data (only from data/lead.example.json) ----------
 
 let samplePromise: Promise<Lead[]> | null = null;
 function getSampleLeads(): Promise<Lead[]> {

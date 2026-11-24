@@ -1,27 +1,21 @@
 // GET /api/sample-leads  →  { leads: Lead[], found: boolean }
-// Sample data used ONLY while Roshni's /api/leads isn't available yet.
-// Reads lead.example.json (repo root, or data/lead.example.json). We never invent companies:
-// if the file isn't there, this returns an empty list.
+// Sample data used ONLY when /api/leads can't be reached. Reads ONLY data/lead.example.json
+// (data/ is git-ignored, and lead.example.json is ignored everywhere: real lead data is never committed).
+// We never invent companies: if the file isn't there, this returns an empty list.
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
 
-const CANDIDATES = [
-  path.join(process.cwd(), 'lead.example.json'),
-  path.join(process.cwd(), 'data', 'lead.example.json'),
-];
+const SAMPLE_FILE = path.join(process.cwd(), 'data', 'lead.example.json');
 
 export async function GET() {
-  for (const file of CANDIDATES) {
-    try {
-      const data = JSON.parse(await readFile(file, 'utf8'));
-      // Accept a single lead, a list of leads, or { leads: [...] } (the clean-leads.mjs format).
-      const leads = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [data];
-      return NextResponse.json({ leads, found: true });
-    } catch {
-      // Try the next location.
-    }
+  try {
+    const data = JSON.parse(await readFile(SAMPLE_FILE, 'utf8'));
+    // Accept a single lead, a list of leads, or { leads: [...] } (the clean-leads.mjs format).
+    const leads = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [data];
+    return NextResponse.json({ leads, found: true });
+  } catch {
+    return NextResponse.json({ leads: [], found: false });
   }
-  return NextResponse.json({ leads: [], found: false });
 }

@@ -24,7 +24,7 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | AI helper | `lib/ai.ts` | One function per AI task, Google Gen AI SDK, `GEMINI_MODEL` from `.env` |
 | `POST /api/segments` | `app/api/segments/route.ts` | Intake → `SegmentPlan` (AI, or a labeled fallback plan if the AI fails) |
 | `GET /api/sam-counts` | `app/api/sam-counts/route.ts` | Counts from local `data/sam_cache/` if present (read only) |
-| `GET /api/sample-leads` | `app/api/sample-leads/route.ts` | Sample fallback from `lead.example.json` only (never invented) |
+| `GET /api/sample-leads` | `app/api/sample-leads/route.ts` | Sample fallback from `data/lead.example.json` only (never invented; `data/` and `lead.example.json` are git-ignored, never commit real lead data) |
 | Front-end API client | `lib/api.ts` | `getSegmentPlan`, `getLeads`, `enrichLead` — screens only call these |
 | Shared types | `lib/types.ts` | `IntakeData`, `SegmentPlan`, `TargetingChoices`, `Lead`, … |
 | Allowed industry codes | `lib/naics.ts` | The 6 NAICS codes the AI may suggest |
