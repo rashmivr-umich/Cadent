@@ -1,13 +1,17 @@
 'use client';
 
 // The 4-step guided setup. Shows a progress bar (CDS Stepper), one step at a time,
-// and Back / Next buttons. The last step's button is "Find my ideal clients".
+// and Back / Next buttons. The last step's button is "Suggest ideal segments".
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@coinbase/cds-web/buttons';
 import { HStack, VStack } from '@coinbase/cds-web/layout';
-import { Stepper } from '@coinbase/cds-web/stepper';
+import {
+  DefaultStepperLabelHorizontal,
+  Stepper,
+  type StepperLabelProps,
+} from '@coinbase/cds-web/stepper';
 import { useIntake } from '@/lib/IntakeContext';
 import { StepAboutYou } from './StepAboutYou';
 import { StepWhatYouDo } from './StepWhatYouDo';
@@ -16,10 +20,15 @@ import { StepPricing } from './StepPricing';
 
 const STEPS = [
   { id: 'about', label: 'About you' },
-  { id: 'service', label: 'What do you do?' },
-  { id: 'clients', label: 'Who have you worked with?' },
-  { id: 'pricing', label: 'How you charge' },
+  { id: 'service', label: 'Your service' },
+  { id: 'clients', label: 'Past clients' },
+  { id: 'pricing', label: 'Pricing' },
 ];
+
+// CDS's default step label uses the all-caps "caption" style; use normal sentence case instead.
+const StepLabel = (props: StepperLabelProps) => (
+  <DefaultStepperLabelHorizontal {...props} font="label2" />
+);
 
 export function IntakeWizard() {
   const router = useRouter();
@@ -30,19 +39,24 @@ export function IntakeWizard() {
   const isLast = stepIndex === STEPS.length - 1;
   const stepId = STEPS[stepIndex].id;
 
-  // "Find my ideal clients" needs at least a name and a service description.
+  // "Suggest ideal segments" needs at least a name and a service description.
   const canFinish =
     intake.userName.trim().length > 0 && intake.serviceDescription.trim().length > 0;
 
   const handleFinish = () => {
     const saved = saveIntake();
     console.log('Cadent intake saved:', saved);
-    router.push('/icp');
+    router.push('/segments');
   };
 
   return (
     <VStack gap={4} maxWidth={760} width="100%" paddingX={3} paddingY={5}>
-      <Stepper direction="horizontal" steps={STEPS} activeStepId={stepId} />
+      <Stepper
+        direction="horizontal"
+        steps={STEPS}
+        activeStepId={stepId}
+        StepperLabelComponent={StepLabel}
+      />
 
       <VStack bordered borderRadius={400} padding={4} background="bg">
         {stepId === 'about' && <StepAboutYou />}
@@ -62,7 +76,7 @@ export function IntakeWizard() {
         </Button>
         {isLast ? (
           <Button variant="primary" endIcon="forwardArrow" disabled={!canFinish} onClick={handleFinish}>
-            Find my ideal clients
+            Suggest ideal segments
           </Button>
         ) : (
           <Button variant="primary" endIcon="forwardArrow" onClick={() => setStepIndex(stepIndex + 1)}>
