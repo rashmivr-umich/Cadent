@@ -54,14 +54,25 @@ async function findWebsite(lead: Lead): Promise<string | null> {
   });
   if (!res.ok) throw new Error(`Website search failed (${res.status})`);
   const data = await res.json();
-  const urls: string[] = (data.results ?? []).map((r: { url?: string }) => r.url).filter(Boolean);
+  const results: { url?: string; title?: string; content?: string }[] = data.results ?? [];
+  // The page must also mention this company: its name without "LLC/Inc" (e.g. "fractal consulting")
+  // or its city. Stops a same-word company (e.g. fractal.ai for "Fractal Consulting, LLC") matching.
+  const shortName = lead.legalName.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\b(llc|inc|corp|corporation|ltd|co|l l c)\b/g, ' ').replace(/\s+/g, ' ').trim();
+  const city = (lead.city ?? '').toLowerCase().trim();
+  const mentionsCompany = (r: { title?: string; content?: string }) => {
+    const text = `${r.title ?? ''} ${r.content ?? ''}`.toLowerCase().replace(/\s+/g, ' ');
+    return (shortName.length >= 4 && text.includes(shortName)) || (city.length >= 3 && text.includes(city));
+  };
   // Skip directories and government sites, and only accept a domain that matches the company's name.
   // Better to say "No website found" than to guess wrong and look up someone else's email.
-  const own = urls.find((u) => {
-    const domain = domainOf(u);
-    return !NOT_COMPANY_SITES.test(u) && !GOVERNMENT_SITE.test(domain) && domainMatchesCompany(domain, lead.legalName);
+  const own = results.find((r) => {
+    if (!r.url) return false;
+    const domain = domainOf(r.url);
+    return !NOT_COMPANY_SITES.test(r.url) && !GOVERNMENT_SITE.test(domain) &&
+      domainMatchesCompany(domain, lead.legalName) && mentionsCompany(r);
   });
-  return own ? `https://${domainOf(own)}` : null;
+  return own?.url ? `https://${domainOf(own.url)}` : null;
 }
 
 async function hunter(path: string, query: Record<string, string>) {
