@@ -1,0 +1,28 @@
+{
+  "name": "cadent",
+  "version": "1.0.0",
+  "description": "Surfaces gov contractors approaching key compliance deadlines so consultants can reach out at the right moment",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rashmivr-umich/Cadent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/rashmivr-umich/Cadent/issues"
+  },
+  "homepage": "https://github.com/rashmivr-umich/Cadent#readme",
+  "private": "true",
+  "dependencies": {
+    "@moss-js/moss": "^1.26.0"
+  }
+}

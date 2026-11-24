@@ -1,0 +1,41 @@
+field,group,comes_from,what_it_holds,ready_now,used_on_screens,if_empty_show
+id,Identity,SAM.gov (ueiSAM),Unique ID of the lead; same as the SAM.gov UEI.,Yes,All (behind the scenes),-
+legalName,Identity,SAM.gov,Official company name.,Yes,"Leads table, detail, approval queue, board card, email",-
+dbaName,Identity,SAM.gov,Trade name if different.,Yes,Lead detail,Hide the line
+samSourceUrl,Source,Built by our code from the UEI,Link to the company's public SAM.gov record (exact link format to confirm).,After cleaning,Every lead and every email,-
+registrationStatus,Registration,SAM.gov,Whether the registration is active.,Yes,Lead detail badge,-
+registrationDate,Registration,SAM.gov,When it first registered.,Yes,"Lead detail, signals",-
+activationDate,Registration,SAM.gov,When the latest registration went live.,Yes,Lead detail,-
+registrationExpirationDate,Registration,SAM.gov,When the registration runs out. Main 'why now'.,Yes,"Leads table, detail, email, approval queue",-
+lastUpdateDate,Compliance,SAM.gov,When the record last changed; used for the 2022-04-04 rule.,Yes,Lead detail (data freshness),-
+evsSource,Compliance,SAM.gov,"Identity data source; E&Y allowed, D&B dropped.",Yes,Not shown (audit only),-
+website,Company,"SAM.gov entityURL, else Tavily",Company website.,Partly (half have it),"Leads table, detail",'Finding website…' then 'No website found'
+startDate,Company,SAM.gov,When the business was founded.,Yes,Lead detail,Hide the line
+city,Location,SAM.gov,City of the business.,Yes,"Leads table, detail",-
+state,Location,SAM.gov,State of the business.,Yes,"Leads table, detail",-
+zip,Location,SAM.gov,ZIP code.,Yes,Lead detail,-
+primaryNaics,Industry,SAM.gov,Main industry code.,Yes,"Leads table, detail, profile match",-
+naicsList,Industry,SAM.gov,All industry codes with names and small-business Y/N.,Yes,Lead detail,-
+businessTypes,Company,SAM.gov,"Self-reported categories (minority-owned, woman-owned, etc).",Yes,Lead detail tags,Hide tags
+sbaCertifications,Company,SAM.gov,SBA certifications with start and end dates (second 'why now').,Yes,"Lead detail, signals",Hide the line
+productsAndServices,Industry,SAM.gov pscList,Plain description of what they sell; used for Moss search.,Yes,"Lead detail, Moss search text",Hide the line
+contactName,Contact,SAM.gov (main business contact),Who to address the email to.,Yes,"Approval queue, email greeting, detail",'Hi there' in the email
+contactTitle,Contact,SAM.gov,Contact's job title.,Yes,"Approval queue, detail",Hide
+daysToExpiry,Signal,Our code,Days from today until the registration expires.,After cleaning,"Leads table, detail, email",-
+signals,Signal,Our code,List of plain-language reasons to reach out now.,After cleaning,"Leads table, detail, approval queue, email",'No dated signal'
+fitScore,Scoring,Our code + Gemini,0–100 score for how good a lead this is.,Needs code,"Leads table, detail",'Scoring…'
+tier,Scoring,Our code,A/B/C bucket from the fit score.,Needs code,"Leads table, board card",'—'
+scoreReasons,Scoring,Gemini,Short reasons behind the score.,Needs code,Agent thinking panel,Hide panel
+matchScore,Search,Moss,How well the lead matches what Maria typed.,After Moss index,Leads table sort order,Not shown
+email,Contact,Hunter (Rashmi's side),Work email of the contact.,Needs Hunter,"Approval queue, detail",'Finding email…' then 'No email found'
+emailStatus,Contact,Hunter,Whether the email is verified (verified / risky / unknown).,Needs Hunter,Badge in table and queue,'Not checked'
+emailConfidence,Contact,Hunter,Hunter's confidence the email is right (0–100).,Needs Hunter,Badge tooltip,Hide
+draftSubject,Outreach,Gemini,Subject line of the drafted email.,Needs code,Approval queue,'Drafting…'
+draftBody,Outreach,Gemini (first line filled from data),Body of the drafted email; names the signal and links the source.,Needs code,Approval queue,'Drafting…'
+agentUnsure,Outreach,Gemini,"What the agent is unsure about (e.g. no website, unverified email).",Needs code,Approval queue,Hide
+agentSteps,Outreach,Gemini + our code,Step-by-step reasoning shown in the Agent thinking panel.,Needs code,Agent thinking panel,Hide panel
+approvalStatus,Workflow,App (Maria's clicks),pending / approved / edited / rejected.,Needs code,Approval queue,'pending'
+sentAt,Workflow,App,When the approved email was sent (to the demo inbox).,Needs code,"Approval queue, board",Hide
+stage,Workflow,App,"Board column: Matched, Contacted, Replied, Meeting Booked, Closed/Lost.",Needs code,Board,'Matched'
+stageHistory,Workflow,App,Each stage move with who moved it (AI or person) and when.,Needs code,"Board card, analytics",Empty
+creditsUsed,Billing,Flexprice (bonus),"Usage counted for this lead (enriched, drafted, sent).",Bonus,Header credit counter,Hide
