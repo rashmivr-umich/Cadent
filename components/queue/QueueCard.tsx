@@ -16,7 +16,7 @@ import { CompanyLogo } from '@/components/leads/CompanyLogo';
 import { EmailStatusBadge } from '@/components/leads/EmailStatusBadge';
 import { SourceCitation } from '@/components/leads/SourceCitation';
 import { approveEmail } from '@/lib/api';
-import { emailUiState, expiryText, formatDate, nameCase } from '@/lib/leadFormat';
+import { emailUiState, expiryText, formatDate, nameCase, unsureNotes } from '@/lib/leadFormat';
 import { FIT_LABELS, fitText } from '@/lib/leadScore';
 import { usePipeline, type LeadWork } from '@/lib/PipelineContext';
 import styles from '@/components/intake/intake.module.css';
@@ -38,7 +38,7 @@ export function QueueCard({ item }: { item: LeadWork }) {
   const [error, setError] = useState('');
 
   if (!draft) return null;
-  const unsure = [...(item.enrichment?.agentUnsure ?? []), ...draft.agentUnsure];
+  const unsure = unsureNotes(item);
   const fit = lead.tier ? FIT_LABELS[lead.tier] : null;
   const isPending = item.approval === 'pending';
 

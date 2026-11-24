@@ -27,6 +27,9 @@ type PipelineValue = {
   track: (lead: Lead) => void;
   update: (leadId: string, changes: Partial<LeadWork>) => void;
   moveStage: (leadId: string, stage: Stage, movedBy: 'ai' | 'person') => void;
+  /** Demo reset: every lead back in Matched (moved by AI); clears drafts, approvals and move
+   *  history. Keeps email lookups so Hunter credits aren't spent again. */
+  resetBoard: () => void;
 };
 
 const PipelineContext = createContext<PipelineValue | null>(null);
@@ -74,8 +77,28 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const resetBoard = useCallback(() => {
+    const at = new Date().toISOString();
+    setWork((all) =>
+      Object.fromEntries(
+        Object.entries(all).map(([id, item]) => [
+          id,
+          {
+            lead: item.lead,
+            enrichment: item.enrichment,
+            approval: null,
+            stage: 'Matched' as Stage,
+            stageHistory: [{ stage: 'Matched' as Stage, movedBy: 'ai' as const, at }],
+          },
+        ]),
+      ),
+    );
+  }, []);
+
   return (
-    <PipelineContext.Provider value={{ work, track, update, moveStage }}>{children}</PipelineContext.Provider>
+    <PipelineContext.Provider value={{ work, track, update, moveStage, resetBoard }}>
+      {children}
+    </PipelineContext.Provider>
   );
 }
 

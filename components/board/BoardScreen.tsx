@@ -6,6 +6,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Banner } from '@coinbase/cds-web/banner';
+import { Button, IconButton } from '@coinbase/cds-web/buttons';
+import { SelectOption } from '@coinbase/cds-web/controls';
+import { Dropdown } from '@coinbase/cds-web/dropdown';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@coinbase/cds-web/overlays';
 import { HStack, VStack } from '@coinbase/cds-web/layout';
 import { Spinner } from '@coinbase/cds-web/loaders';
 import { Text } from '@coinbase/cds-web/typography';
@@ -20,7 +24,8 @@ import { HistoryModal } from './HistoryModal';
 
 export function BoardScreen() {
   const { hydrated, intake, targeting } = useIntake();
-  const { work, track, moveStage } = usePipeline();
+  const { work, track, moveStage, resetBoard } = usePipeline();
+  const [confirmReset, setConfirmReset] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -54,14 +59,54 @@ export function BoardScreen() {
 
   return (
     <VStack gap={4} width="100%" maxWidth={1440} paddingX={3} paddingY={5}>
-      <VStack gap={1}>
-        <Text as="h1" font="title1">
-          Board
-        </Text>
-        <Text as="p" font="body" color="fgMuted">
-          Move a lead with “Move to…” or drag it to another column. Click a card to see who moved it and when.
-        </Text>
-      </VStack>
+      <HStack justifyContent="space-between" alignItems="flex-start" gap={2}>
+        <VStack gap={1}>
+          <Text as="h1" font="title1">
+            Board
+          </Text>
+          <Text as="p" font="body" color="fgMuted">
+            Move a lead with “Move to…” or drag it to another column. Click a card to see who moved it and when.
+          </Text>
+        </VStack>
+        {/* Board settings */}
+        <Dropdown
+          width={220}
+          onChange={(value: string) => value === 'reset' && setConfirmReset(true)}
+          content={<SelectOption value="reset" title="Reset demo board" description="Start the demo clean" />}
+        >
+          <IconButton name="settings" variant="secondary" accessibilityLabel="Board settings" />
+        </Dropdown>
+      </HStack>
+
+      {confirmReset && (
+        <Modal visible onRequestClose={() => setConfirmReset(false)}>
+          <ModalHeader title="Reset demo board?" />
+          <ModalBody>
+            <Text as="p" font="body">
+              Every lead goes back to Matched (moved by AI). Drafts, approvals and move history are cleared.
+              Emails already found are kept, so lookups aren&apos;t repeated. Emails already sent stay sent.
+            </Text>
+          </ModalBody>
+          <ModalFooter
+            primaryAction={
+              <Button
+                variant="negative"
+                onClick={() => {
+                  resetBoard();
+                  setConfirmReset(false);
+                }}
+              >
+                Reset board
+              </Button>
+            }
+            secondaryAction={
+              <Button variant="secondary" onClick={() => setConfirmReset(false)}>
+                Cancel
+              </Button>
+            }
+          />
+        </Modal>
+      )}
 
       {error && (
         <Banner variant="error" styleVariant="inline" startIcon="error" title="Couldn't load leads">

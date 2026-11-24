@@ -41,7 +41,9 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | Lead detail | `app/leads/[id]`, `components/leads/LeadDetail.tsx` | Contact + Find email, Draft email, company facts, data freshness, source, Agent thinking |
 | Approval queue | `app/queue`, `components/queue/` | To review / Sent / Rejected; Approve & send, Edit, Reject |
 | Lead work store | `lib/PipelineContext.tsx` | Email lookup, draft, edits, approval, stage + history in `localStorage` (`cadent.pipeline`) |
-| Header nav | `components/layout/AppShell.tsx` | "Leads", "Approval queue (n)" and "Board" links |
+| Header nav | `components/layout/AppShell.tsx` | "Leads", "Queue" (with a count badge of drafts to review) and "Board" |
+| Prepare outreach | `components/leads/LeadsScreen.tsx`, `lib/usePrepareOutreach.ts`, `components/leads/OutreachProgress.tsx` | Tick leads (or "Select top 5", max 10) → sticky bar "Prepare outreach (N)" → for each lead in turn: enrich (reused if already done) then draft → progress list → goes to the Queue. Main path from Leads to the Queue. |
+| Reset demo board | Board settings (gear) → "Reset demo board" | All leads back to Matched (moved by AI); clears drafts, approvals, history; keeps email lookups |
 | Board | `app/board`, `components/board/` | Matched → Contacted → Replied → Meeting Booked → Closed → Lost; "Move to…" menu + drag-and-drop; click a card for its history (audit log) |
 | Analytics | `components/board/BoardAnalytics.tsx` + `lib/pipelineStats.ts` | On the board: count per stage, conversion between steps, moves by AI vs person, breakdown by fit and by industry |
 | "Show N more leads" button | `components/leads/LeadsScreen.tsx` | **Placeholder only** (does nothing yet); Moss has just 10 leads |
@@ -250,7 +252,11 @@ for a contractor; a wrong guess would show someone else's email.)
 - Verify: `GET https://api.hunter.io/v2/email-verifier?email=<email>&api_key=${HUNTER_API_KEY}`
 - Map to `emailStatus`: `valid` → `verified`, `accept_all`/`unknown` → `unknown`, other → `risky`.
 - This email is **only shown on screen**. It is never sent to.
-- Free plans are small. Don't call enrich in loops; only when someone clicks "Enrich".
+- Free plans are small. Don't call enrich in loops; only when someone clicks "Find email" (lead detail) or
+  "Prepare outreach" (leads table, max 10 leads per batch, one at a time). A lead that already has a
+  lookup result is never looked up again (the result is reused from `cadent.pipeline`).
+- In "Prepare outreach", if the lookup fails or finds no email, the email is still drafted and the reason
+  goes into the draft's `agentUnsure`; one lead failing never stops the batch.
 
 **Email (approve).** Needs `RESEND_API_KEY` and `DEMO_RECIPIENT` in `.env`. Errors from
 `sendDemoEmail` (e.g. "DEMO_RECIPIENT is not set. Nothing was sent.") go straight to the screen.
@@ -263,7 +269,8 @@ const r = await sendDemoEmail({ subject, body, leadName: lead.legalName }); // n
 (simple, no database). Every move adds `{ stage, movedBy: "person" | "ai", at }` to `stageHistory`.
 Built in `lib/PipelineContext.tsx`, key **`cadent.pipeline`** = `{ [leadId]: LeadWork }`, where
 `LeadWork` = `{ lead, enrichment?, draft?, edited?, approval, sent?, stage, stageHistory }`.
-The board didn't change this format. Rules: every lead from `GET /api/leads` gets a record starting
+The board didn't change this format. "Reset demo board" rewrites each record to
+`{ lead, enrichment, approval: null, stage: "Matched", stageHistory: [{ Matched, ai, now }] }`. Rules: every lead from `GET /api/leads` gets a record starting
 in "Matched" (moved by AI) if it has none; approving an email moves it to "Contacted" (moved by
 person); everything else moves only when Maria moves it. Nothing invents replies or meetings.
 Analytics (`lib/pipelineStats.ts`): conversion = leads that ever reached the next step ÷ leads that
@@ -307,7 +314,7 @@ days, contact titles, size), plus `agentSteps`. Maria's final picks are saved as
 |---|---|---|
 | Intake | Built | – |
 | Segments | Built | Count line: "Not searched yet" |
-| Leads table | logo + legalName, dbaName (grey line, hidden if it repeats the name), "City, ST", primaryNaicsName (code in tooltip), "SAM.gov registration · Expires in N days · date", fitScore + fit label, emailStatus badge, "Source Link" column (copy-UEI button only) | logo → company initials; dbaName hidden; email badge "Not looked up yet" |
+| Leads table | checkbox, logo + legalName, dbaName (grey line, hidden if it repeats the name), "City, ST", primaryNaicsName (code in tooltip), "SAM.gov registration · Expires in N days · date", fitScore + "Strong fit · A", email address + status badge (Verified / Risky / Unknown, confidence in tooltip), "Source Link" column (copy-UEI button only); "Select top 5", sticky "Prepare outreach (N)" bar | logo → company initials; dbaName hidden; email "Not looked up yet" → after lookup "No email found" / "No website found" |
 | Lead detail (**built**) | above + naicsList, productsAndServices, businessTypes (tags), dates, "Data freshness", website, contact + title, Find email, Draft email, collapsible "Agent thinking" (scoreReasons, agentSteps, agentUnsure) | website "No website found"; productsAndServices hidden; email "Not looked up yet" → "Finding email…" → badge / "No email found" / "No website found" |
 | Approval queue (**built**) | contact, email + badge, signals, subject + body (Edit makes them editable), agentUnsure, source, Approve & send / Edit / Reject; tabs To review / Sent / Rejected | "Drafting…" on the lead page; send errors shown as "Not sent · {reason}" |
 | Board (**built**) | cards: legalName, "Strong fit · A · 97", days to expiry, last move ("Moved by AI · 2:15 PM" / "Moved by Maria · 2:31 PM"), Move to…; click → history modal with Open lead | column "No leads" |

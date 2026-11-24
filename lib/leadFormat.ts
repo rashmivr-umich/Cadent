@@ -47,3 +47,23 @@ export function emailUiState(lead: Lead, work?: LeadWork, finding = false): Emai
   }
   return { kind: 'notChecked' };
 }
+
+/** "What the agent is unsure about" for a lead: lookup notes + draft notes, without repeats
+ *  or contradictions (e.g. "Email not verified" when no email was found at all). */
+export function unsureNotes(work?: LeadWork): string[] {
+  if (!work) return [];
+  const e = work.enrichment;
+  const notes = [...(e?.agentUnsure ?? []), ...(work.draft?.agentUnsure ?? [])];
+  const covered = (pattern: RegExp) => notes.some((n, i) => i < (e?.agentUnsure.length ?? 0) && pattern.test(n));
+  const seen = new Set<string>();
+  return notes.filter((note, i) => {
+    const fromDraft = i >= (e?.agentUnsure.length ?? 0);
+    if (fromDraft && /no website/i.test(note) && covered(/no website/i)) return false;
+    if (fromDraft && /no (work )?email/i.test(note) && covered(/no (work )?email|no website/i)) return false;
+    if (/not verified/i.test(note) && e && !e.email) return false;
+    const key = note.toLowerCase().replace(/[^a-z]/g, '');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

@@ -3,9 +3,10 @@
 // Dense, spreadsheet-style table of leads.
 // Columns: company (logo + name + trade name), location, industry (code in tooltip),
 // why now (SAM.gov registration expiry), fit, email, source link (copy UEI).
-// Clicking a row opens the lead's detail page.
+// Clicking a row opens the lead's detail page. The checkbox selects it for "Prepare outreach".
 
-import { HStack, VStack } from '@coinbase/cds-web/layout';
+import { Checkbox } from '@coinbase/cds-web/controls';
+import { Box, HStack, VStack } from '@coinbase/cds-web/layout';
 import { Tooltip } from '@coinbase/cds-web/overlays';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@coinbase/cds-web/tables';
 import { Tag } from '@coinbase/cds-web/tag';
@@ -20,13 +21,22 @@ import { EmailStatusBadge } from './EmailStatusBadge';
 import { SourceCitation } from './SourceCitation';
 
 
-export function LeadsTable({ leads }: { leads: Lead[] }) {
+type Props = {
+  leads: Lead[];
+  selected: string[];
+  onToggle: (leadId: string) => void;
+  /** True when the selection is full (new boxes can't be ticked). */
+  selectionFull: boolean;
+};
+
+export function LeadsTable({ leads, selected, onToggle, selectionFull }: Props) {
   const router = useRouter();
   const { work } = usePipeline();
   return (
     <Table bordered variant="ruled" compact>
       <TableHeader>
         <TableRow>
+          <TableCell title="" width="44px" />
           <TableCell title="Company" width="26%" />
           <TableCell title="Location" width="11%" />
           <TableCell title="Industry" width="18%" />
@@ -39,6 +49,17 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
       <TableBody>
         {leads.map((lead) => (
           <TableRow key={lead.id} onClick={() => router.push(`/leads/${lead.id}`)} style={{ cursor: 'pointer' }}>
+            <TableCell>
+              {/* Stop the click from also opening the lead. */}
+              <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                <Checkbox
+                  checked={selected.includes(lead.id)}
+                  disabled={selectionFull && !selected.includes(lead.id)}
+                  onChange={() => onToggle(lead.id)}
+                  aria-label={`Select ${lead.legalName}`}
+                />
+              </Box>
+            </TableCell>
             <TableCell>
               <HStack gap={1.5} alignItems="center">
                 <CompanyLogo name={lead.legalName} website={lead.website} size="l" />
@@ -94,7 +115,14 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               </Tooltip>
             </TableCell>
             <TableCell>
-              <EmailStatusBadge state={emailUiState(lead, work[lead.id])} />
+              <VStack gap={0.5} alignItems="flex-start">
+                {work[lead.id]?.enrichment?.email && (
+                  <Text as="span" font="label2">
+                    {work[lead.id]!.enrichment!.email}
+                  </Text>
+                )}
+                <EmailStatusBadge state={emailUiState(lead, work[lead.id])} />
+              </VStack>
             </TableCell>
             <TableCell>
               <SourceCitation uei={lead.samSource?.uei ?? lead.id} iconOnly />

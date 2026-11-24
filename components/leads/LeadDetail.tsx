@@ -13,7 +13,7 @@ import { Tag } from '@coinbase/cds-web/tag';
 import { Text } from '@coinbase/cds-web/typography';
 import { draftEmail, enrichLead, getLead } from '@/lib/api';
 import { useIntake } from '@/lib/IntakeContext';
-import { cityCase, emailUiState, expiryText, formatDate, nameCase, showDba } from '@/lib/leadFormat';
+import { cityCase, emailUiState, expiryText, formatDate, nameCase, showDba, unsureNotes } from '@/lib/leadFormat';
 import { FIT_LABELS, fitText } from '@/lib/leadScore';
 import { usePipeline } from '@/lib/PipelineContext';
 import type { Lead } from '@/lib/types';
@@ -126,7 +126,7 @@ export function LeadDetail({ leadId }: { leadId: string }) {
   const enrichment = item?.enrichment;
   const website = enrichment?.website ?? lead.website;
   const draft = item?.draft;
-  const unsure = [...(enrichment?.agentUnsure ?? []), ...(draft?.agentUnsure ?? [])];
+  const unsure = unsureNotes(item);
   const fit = lead.tier ? FIT_LABELS[lead.tier] : null;
 
   return (
