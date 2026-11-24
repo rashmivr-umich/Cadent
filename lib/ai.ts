@@ -6,7 +6,7 @@ import 'server-only';
 import { GoogleGenAI } from '@google/genai';
 import { ALLOWED_NAICS } from './naics';
 import { cleanSegmentPlan } from './segmentPlan';
-import type { IntakeData, SegmentPlan } from './types';
+import type { DraftResponse, EnrichResponse, IntakeData, Lead, SegmentPlan, Sender } from './types';
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'gemini';
 // Default is a fast model (~1 s). Tested Nov 24: gemini-3.8-flash and 3.7-flash took 2+ minutes,
@@ -138,4 +138,131 @@ export async function suggestSegments(intake: IntakeData): Promise<SegmentPlan> 
   const raw = await askForJson(SEGMENT_SYSTEM, prompt, SEGMENT_PLAN_SCHEMA);
   // Never trust the model blindly: keep only allowed codes, real states, valid numbers.
   return cleanSegmentPlan(raw, intake);
+}
+
+// ---------- Task 2: draft an outreach email for one lead ----------
+
+const DRAFT_SYSTEM = `You write short, helpful first emails from a compliance consultant to a small government contractor.
+Rules (follow all of them):
+- 90 to 140 words. Plain, warm, professional. No hype, no exclamation marks.
+- Lay it out like a real email with line breaks ("\\n"): greeting line, blank line, 2 short paragraphs
+  separated by a blank line, blank line, sign-off ("Best,") then the sender's name and firm on separate
+  lines, blank line, then the source line.
+- Subject: short and specific, mentions the renewal date (e.g. "Your SAM.gov renewal on Dec 5").
+- Name the real, dated reason to write: their SAM.gov registration expiration date (given below).
+- Offer help preparing for the renewal and a free review of their registration details.
+- NEVER offer to manage, file, submit or log into their SAM.gov account, and never ask for their login.
+  The company files its own renewal; the consultant only guides and reviews.
+- NEVER mention business types or ownership categories (minority-owned, woman-owned, veteran-owned, etc.).
+- Never invent facts, numbers, prices, past results or deadlines that are not given.
+- Greet the contact by first name if a contact name is given, otherwise "Hi there".
+- Sign off with the sender's name and firm.
+- End the body with this exact line on its own: "Source: SAM.gov, UEI {uei}" (with the real UEI).
+- agentUnsure: short plain notes on what is uncertain (e.g. "No website found", "Email not verified",
+  "Contact title may be out of date"). Can be empty.
+- agentSteps: 3 to 5 short plain sentences describing what you used and decided, in order.`;
+
+const DRAFT_SCHEMA = {
+  type: 'object',
+  properties: {
+    draftSubject: { type: 'string' },
+    draftBody: { type: 'string' },
+    agentUnsure: { type: 'array', items: { type: 'string' } },
+    agentSteps: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['draftSubject', 'draftBody', 'agentUnsure', 'agentSteps'],
+};
+
+const FORBIDDEN_DRAFT =
+  /\b(log ?in(to)?|login|password|credentials|manage your (sam|account|registration)|file (it|your renewal) for you|submit (it )?for you)\b|minority|woman[- ]owned|women[- ]owned|veteran[- ]owned|disadvantaged|hubzone|8\(a\)/i;
+
+const formatDate = (dateText: string) =>
+  new Date(`${dateText}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+/** Lead facts the AI may use (no business types, so it can't mention them). */
+function draftFacts(lead: Lead, sender: Sender, enrichment?: Partial<EnrichResponse>) {
+  return {
+    company: lead.legalName,
+    city: lead.city,
+    state: lead.state,
+    contactName: lead.contactName,
+    contactTitle: lead.contactTitle,
+    industry: lead.primaryNaicsName,
+    registrationExpires: formatDate(lead.registrationExpirationDate),
+    daysUntilExpiry: lead.daysToExpiry,
+    uei: lead.samSource?.uei ?? lead.id,
+    website: enrichment?.website ?? lead.website ?? null,
+    emailStatus: enrichment?.email ? enrichment.emailStatus : 'no email found yet',
+    sender,
+  };
+}
+
+/** Final safety pass: source line present, nothing that breaks the rules. */
+function checkDraft(draft: { draftSubject: string; draftBody: string; agentUnsure: string[]; agentSteps: string[] }, uei: string) {
+  const sourceLine = `Source: SAM.gov, UEI ${uei}`;
+  let body = draft.draftBody.trim();
+  if (!body.includes(sourceLine)) body = `${body.replace(/\n*Source:.*$/i, '')}\n\n${sourceLine}`;
+  if (FORBIDDEN_DRAFT.test(`${draft.draftSubject} ${body}`)) {
+    throw new Error('The draft broke a rule (account access or business type)');
+  }
+  return { ...draft, draftSubject: draft.draftSubject.trim(), draftBody: body };
+}
+
+/** Simple, safe template used if the AI is unavailable. Clearly labeled as a fallback. */
+export function fallbackDraft(lead: Lead, sender: Sender, reason: string): DraftResponse {
+  const first = lead.contactName?.trim().split(/\s+/)[0];
+  const uei = lead.samSource?.uei ?? lead.id;
+  const date = formatDate(lead.registrationExpirationDate);
+  const firm = sender.firm || 'my firm';
+  return {
+    draftSubject: `Your SAM.gov registration renews ${date}`,
+    draftBody: [
+      `Hi ${first ? first.charAt(0) + first.slice(1).toLowerCase() : 'there'},`,
+      '',
+      `I noticed ${lead.legalName}'s SAM.gov registration is set to expire on ${date}. Renewals can take longer than expected, and a lapse can pause federal payments and awards.`,
+      '',
+      `I help small government contractors prepare for renewals and keep their registration details accurate. If it's useful, I'd be glad to do a free review of your registration before you renew.`,
+      '',
+      'Best,',
+      sender.name || 'Your name',
+      firm,
+      '',
+      `Source: SAM.gov, UEI ${uei}`,
+    ].join('\n'),
+    agentUnsure: [`Written from a template because the AI was unavailable (${reason}).`],
+    agentSteps: [
+      'The AI was not available, so a safe template was used.',
+      `Used the SAM.gov registration expiration date (${date}) as the reason to write.`,
+      'Offered a free review; did not offer to manage or log into their account.',
+    ],
+    source: 'fallback',
+  };
+}
+
+export async function draftOutreach(
+  lead: Lead,
+  sender: Sender,
+  enrichment?: Partial<EnrichResponse>,
+): Promise<DraftResponse> {
+  const facts = draftFacts(lead, sender, enrichment);
+  const prompt = `Write the email using only these facts (JSON):\n\n${JSON.stringify(facts, null, 2)}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw: any = await askForJson(DRAFT_SYSTEM, prompt, DRAFT_SCHEMA);
+  const toList = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : []);
+  const draft = checkDraft(
+    {
+      draftSubject: String(raw?.draftSubject ?? ''),
+      draftBody: String(raw?.draftBody ?? ''),
+      agentUnsure: toList(raw?.agentUnsure),
+      agentSteps: toList(raw?.agentSteps),
+    },
+    facts.uei,
+  );
+  if (!draft.draftSubject || !draft.draftBody) throw new Error('The AI returned an empty draft');
+  return { ...draft, source: 'ai' };
 }

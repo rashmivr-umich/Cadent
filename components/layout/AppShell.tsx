@@ -2,11 +2,14 @@
 
 // Shared page frame: header (wordmark, workspace, teammates) + footer (data source label).
 
+import { usePathname, useRouter } from 'next/navigation';
+import { Button } from '@coinbase/cds-web/buttons';
 import { Avatar } from '@coinbase/cds-web/media';
 import { Box, Divider, HStack, VStack } from '@coinbase/cds-web/layout';
 import { NavigationBar } from '@coinbase/cds-web/navigation';
 import { Text } from '@coinbase/cds-web/typography';
 import { useIntake } from '@/lib/IntakeContext';
+import { usePipeline } from '@/lib/PipelineContext';
 
 const TEAMMATES = [
   { name: 'Maria', colorScheme: 'purple' as const },
@@ -16,6 +19,14 @@ const TEAMMATES = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { intake } = useIntake();
   const workspaceName = intake.workspace.name || 'No workspace yet';
+  const router = useRouter();
+  const pathname = usePathname();
+  const { work } = usePipeline();
+  const toReview = Object.values(work).filter((w) => w.approval === 'pending').length;
+  const nav = [
+    { href: '/leads', label: 'Leads' },
+    { href: '/queue', label: toReview ? `Approval queue (${toReview})` : 'Approval queue' },
+  ];
 
   return (
     <VStack background="bg" minHeight="100vh">
@@ -33,6 +44,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
         end={
           <HStack alignItems="center" gap={1}>
+            {nav.map((item) => (
+              <Button
+                key={item.href}
+                variant="secondary"
+                transparent={!pathname.startsWith(item.href)}
+                compact
+                onClick={() => router.push(item.href)}
+              >
+                {item.label}
+              </Button>
+            ))}
+            <Divider direction="vertical" height={24} />
             {TEAMMATES.map((person) => (
               <Avatar
                 key={person.name}

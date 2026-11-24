@@ -6,13 +6,16 @@ import { MediaQueryProvider, ThemeProvider } from '@coinbase/cds-web/system';
 import { PortalProvider } from '@coinbase/cds-web/overlays/PortalProvider';
 import { defaultTheme } from '@coinbase/cds-web/themes/defaultTheme';
 import { IntakeProvider } from '@/lib/IntakeContext';
+import { PipelineProvider } from '@/lib/PipelineContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MediaQueryProvider>
       <ThemeProvider theme={defaultTheme} activeColorScheme="light">
         <PortalProvider>
-          <IntakeProvider>{children}</IntakeProvider>
+          <IntakeProvider>
+            <PipelineProvider>{children}</PipelineProvider>
+          </IntakeProvider>
         </PortalProvider>
       </ThemeProvider>
     </MediaQueryProvider>

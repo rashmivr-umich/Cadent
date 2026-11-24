@@ -4,11 +4,13 @@
 // lead.example.json and flag it as sample data, so screens can show a "Sample data" note.
 
 import type {
-  EnrichResult,
+  DraftResponse,
+  EnrichResponse,
   IntakeData,
   Lead,
   LeadFilters,
   SegmentPlanResponse,
+  Sender,
 } from './types';
 
 export type LeadsResult = {
@@ -20,7 +22,6 @@ export type LeadsResult = {
   hiddenByDays?: number;
   totalInIndex?: number;
 };
-export type EnrichLeadResult = EnrichResult & { isSample: boolean };
 
 // ---------- Segments (our AI route) ----------
 
@@ -86,21 +87,40 @@ export async function getLeads(filters: LeadFilters): Promise<LeadsResult> {
   return { leads: await getSampleLeads(), isSample: true };
 }
 
-/** POST /api/leads/[id]/enrich */
-export async function enrichLead(leadId: string): Promise<EnrichLeadResult> {
+// ---------- One lead: detail, enrich, draft, approve ----------
+// These throw an Error whose message is the server's plain-language reason
+// (e.g. "HUNTER_API_KEY is not set in .env"), so screens can show it as-is.
+
+async function call<T>(url: string, init?: RequestInit): Promise<T> {
+  let res: Response;
   try {
-    const res = await fetch(`/api/leads/${encodeURIComponent(leadId)}/enrich`, { method: 'POST' });
-    if (res.ok) return { ...((await res.json()) as EnrichResult), isSample: false };
+    res = await fetch(url, init);
   } catch {
-    // Endpoint not there yet: use sample data below.
+    throw new Error("Couldn't reach the server. Is the app running?");
   }
-  // Sample: use only what lead.example.json already says about this lead.
-  const lead = (await getSampleLeads()).find((l) => l.id === leadId);
-  return {
-    email: lead?.email ?? null,
-    emailStatus: lead?.emailStatus ?? 'unknown',
-    emailConfidence: lead?.emailConfidence ?? null,
-    website: lead?.website ?? null,
-    isSample: true,
-  };
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error ?? `Request failed (${res.status})`);
+  return body as T;
 }
+
+const post = (body?: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body ?? {}),
+});
+
+/** GET /api/leads/[id] (naics = Maria's picked codes, so the fit score matches the table). */
+export const getLead = (leadId: string, naics: string[] = []) =>
+  call<Lead>(`/api/leads/${encodeURIComponent(leadId)}?naics=${naics.join(',')}`);
+
+/** POST /api/leads/[id]/enrich: website + work email (shown only, never sent to). */
+export const enrichLead = (leadId: string) =>
+  call<EnrichResponse>(`/api/leads/${encodeURIComponent(leadId)}/enrich`, post());
+
+/** POST /api/leads/[id]/draft: AI-written outreach email (or a labeled template). */
+export const draftEmail = (leadId: string, sender: Sender, enrichment?: EnrichResponse) =>
+  call<DraftResponse>(`/api/leads/${encodeURIComponent(leadId)}/draft`, post({ sender, enrichment }));
+
+/** POST /api/leads/[id]/approve: sends ONLY to the demo inbox via sendDemoEmail. */
+export const approveEmail = (leadId: string, subject: string, body: string) =>
+  call<{ sentTo: string; sentAt: string }>(`/api/leads/${encodeURIComponent(leadId)}/approve`, post({ subject, body }));

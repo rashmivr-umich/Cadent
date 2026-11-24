@@ -34,8 +34,20 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | Fit score | `lib/leadScore.ts` | Days to expiry, fit score, tier, score reasons, signal text (no AI) |
 | Leads table | `app/leads`, `components/leads/` | CDS table: logo + company, location, industry, why now, fit, email badge, source link (copy UEI) |
 | `GET /api/logo` | `app/api/logo/route.ts` | Company icon from the company's own website (Moss has no logos); initials otherwise |
+| `GET /api/leads/[id]` | `app/api/leads/[id]/route.ts` | One lead, scored like the table |
+| `POST /api/leads/[id]/enrich` | `app/api/leads/[id]/enrich/route.ts` + `lib/enrich.ts` | Website (SAM.gov, else Tavily) + Hunter email find/verify |
+| `POST /api/leads/[id]/draft` | `app/api/leads/[id]/draft/route.ts` + `draftOutreach` in `lib/ai.ts` | Gemini email; rules re-checked in code; labeled template if the AI fails |
+| `POST /api/leads/[id]/approve` | `app/api/leads/[id]/approve/route.ts` | Sends only via `sendDemoEmail` (no recipient passed) |
+| Lead detail | `app/leads/[id]`, `components/leads/LeadDetail.tsx` | Contact + Find email, Draft email, company facts, data freshness, source, Agent thinking |
+| Approval queue | `app/queue`, `components/queue/` | To review / Sent / Rejected; Approve & send, Edit, Reject |
+| Lead work store | `lib/PipelineContext.tsx` | Email lookup, draft, edits, approval, stage + history in `localStorage` (`cadent.pipeline`) |
+| Header nav | `components/layout/AppShell.tsx` | "Leads" and "Approval queue (n)" links |
 
-**Next to build:** lead detail, enrich, draft, approval queue, board, analytics (in that order).
+**Next to build:** board, then analytics.
+
+**Keys still needed in `.env` to use everything:** `TAVILY_API_KEY`, `HUNTER_API_KEY` (Find email),
+`RESEND_API_KEY`, `DEMO_RECIPIENT` (Approve & send). Without them the screens show the plain
+"… is not set" message and nothing is sent.
 
 ---
 
@@ -55,8 +67,8 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 `scripts/`, everything in `data/`. Our own files in `lib/` (`ai.ts`, `api.ts`, `types.ts`, …) are fine to edit.
 
 **What does NOT exist yet (you build it):**
-- `GET /api/leads/[id]`, and the `/enrich`, `/draft`, `/approve` routes (Part 3).
-  (`GET /api/leads` is built. It's `/api/leads`, not `/api/search`.)
+- Board and analytics (both read `lib/PipelineContext.tsx`; no endpoints needed).
+  All six endpoints in Part 3 are built. It's `/api/leads`, not `/api/search`.
 
 **Moss facts:**
 - Index name: **`leads`**. Use the same `MOSS_PROJECT_ID` / `MOSS_PROJECT_KEY` Roshni sent you.
@@ -162,10 +174,10 @@ Screens call these only through `lib/api.ts`.
 |---|---|---|---|---|---|
 | `POST /api/segments` | **Built** | Intake → segment plan (profile step) | Gemini via `lib/ai.ts` | `IntakeData` | `{ plan: SegmentPlan, source, fallbackReason? }` |
 | `GET /api/leads` | **Built** | List leads for the Segments choices | Moss | query: `naics`, `states`, `whyNowDays` | `{ leads: Lead[], totalInIndex, matchedSegments, hiddenByDays }` |
-| `GET /api/leads/[id]` | To build | One lead | Moss | – | `Lead` |
-| `POST /api/leads/[id]/enrich` | To build | Website + email | Tavily, Hunter | – | `{ website, email, emailStatus, emailConfidence }` |
-| `POST /api/leads/[id]/draft` | To build | Write outreach email | Gemini via `lib/ai.ts` | – | `{ draftSubject, draftBody, agentUnsure[], agentSteps[] }` |
-| `POST /api/leads/[id]/approve` | To build | Send to demo inbox | `sendDemoEmail` | `{ subject, body }` | `{ sentTo, sentAt }` |
+| `GET /api/leads/[id]` | **Built** | One lead | Moss | query (optional): `naics` | `Lead` |
+| `POST /api/leads/[id]/enrich` | **Built** | Website + email | Tavily, Hunter | – | `{ website, websiteSource, email, emailStatus, emailConfidence, agentUnsure[] }` |
+| `POST /api/leads/[id]/draft` | **Built** | Write outreach email | Gemini via `lib/ai.ts` | optional `{ sender: {name, firm, service}, enrichment }` | `{ draftSubject, draftBody, agentUnsure[], agentSteps[], source: "ai" \| "fallback" }` |
+| `POST /api/leads/[id]/approve` | **Built** | Send to demo inbox | `sendDemoEmail` | `{ subject, body }` | `{ sentTo, sentAt }` |
 
 There is **no `/api/icp`**: the profile step is `/api/segments` + the `SegmentPlan` shape in `lib/types.ts`.
 Reject, board moves and analytics happen in the browser (`localStorage`), with no endpoint.
@@ -213,6 +225,10 @@ uses Google's official SDK `@google/genai` (already installed) and `process.env.
   "Source: SAM.gov, UEI {uei}"; offer help and a free review; **never** offer to manage or log
   into their SAM.gov account; never mention `businessTypes` (e.g. minority-owned).
   Return `agentUnsure` (e.g. "no website", "email not verified").
+  Built as `draftOutreach` in `lib/ai.ts`: also asks for real email line breaks and a subject with the
+  renewal date; sender = Maria's name, firm and service from the intake. After the AI answers, code
+  adds the source line if missing and rejects drafts that offer account access or mention business
+  types. If the AI fails, `fallbackDraft` returns a safe template marked `source: "fallback"`.
 
 **Tavily (website, only if the lead has none).** `POST https://api.tavily.com/search` with header
 `Authorization: Bearer ${TAVILY_API_KEY}` and body `{ "query": "<company name> <city> VA official website" }`.
@@ -273,8 +289,8 @@ days, contact titles, size), plus `agentSteps`. Maria's final picks are saved as
 | Intake | Built | – |
 | Segments | Built | Count line: "Not searched yet" |
 | Leads table | logo + legalName, dbaName (grey line, hidden if it repeats the name), "City, ST", primaryNaicsName (code in tooltip), "SAM.gov registration · Expires in N days · date", fitScore + fit label, emailStatus badge, "Source Link" column (copy-UEI button only) | logo → company initials; dbaName hidden; email badge "Not looked up yet" |
-| Lead detail | above + naicsList, productsAndServices, businessTypes (tags), dates, "Data freshness", website, contact + title, collapsible "Agent thinking" (scoreReasons, agentSteps) | website "No website found"; productsAndServices hidden |
-| Approval queue | contact, email + badge, signals, editable subject + body, agentUnsure, source, Approve / Edit / Reject | "Drafting…", "Finding email…" then "No email found" |
+| Lead detail (**built**) | above + naicsList, productsAndServices, businessTypes (tags), dates, "Data freshness", website, contact + title, Find email, Draft email, collapsible "Agent thinking" (scoreReasons, agentSteps, agentUnsure) | website "No website found"; productsAndServices hidden; email "Not looked up yet" → "Finding email…" → badge / "No email found" / "No website found" |
+| Approval queue (**built**) | contact, email + badge, signals, subject + body (Edit makes them editable), agentUnsure, source, Approve & send / Edit / Reject; tabs To review / Sent / Rejected | "Drafting…" on the lead page; send errors shown as "Not sent · {reason}" |
 | Board | cards: legalName, tier, stage, last move ("Moved by AI · 2:15 PM") | – |
 | Analytics | count + conversion per stage | 0 |
 

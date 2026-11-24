@@ -147,3 +147,26 @@ export type EnrichResult = {
   emailConfidence: number | null;
   website: string | null;
 };
+
+// ---------- Lead work (enrich, draft, approval) ----------
+
+/** POST /api/leads/[id]/enrich answer. */
+export type EnrichResponse = EnrichResult & {
+  websiteSource: 'sam' | 'search' | null; // where the website came from
+  agentUnsure: string[];
+};
+
+/** Who the email is from (Maria, from the intake). */
+export type Sender = { name: string; firm: string; service: string };
+
+/** POST /api/leads/[id]/draft answer. */
+export type DraftResponse = {
+  draftSubject: string;
+  draftBody: string;
+  agentUnsure: string[];
+  agentSteps: string[];
+  source: 'ai' | 'fallback';
+};
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type Stage = 'Matched' | 'Contacted' | 'Replied' | 'Meeting Booked' | 'Closed' | 'Lost';
