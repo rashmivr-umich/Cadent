@@ -14,7 +14,12 @@ export async function POST(request: Request) {
   try {
     body = { plan: await suggestSegments(intake), source: 'ai' };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Unknown error';
+    let reason = error instanceof Error ? error.message : 'Unknown error';
+    if (error instanceof Error && error.name === 'AbortError') reason = 'The AI took too long to answer.';
+    // Google sends errors as JSON text; keep just the human-readable message.
+    try {
+      reason = JSON.parse(reason)?.error?.message ?? reason;
+    } catch {}
     console.warn('[segments] Using fallback plan:', reason);
     body = { plan: buildFallbackPlan(intake), source: 'fallback', fallbackReason: reason };
   }

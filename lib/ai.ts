@@ -9,7 +9,11 @@ import { cleanSegmentPlan } from './segmentPlan';
 import type { IntakeData, SegmentPlan } from './types';
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'gemini';
-const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash';
+// Default is a fast model (~1 s). Tested Nov 24: gemini-3.8-flash and 3.7-flash took 2+ minutes,
+// gemini-2.5-flash is retired for new keys. Override with AI_MODEL in .env.
+const AI_MODEL = process.env.AI_MODEL || 'gemini-3.5-flash-lite';
+// Give up after this long and use the fallback plan, so the demo never hangs.
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 30_000;
 
 /** Sends a prompt to the configured model and returns its JSON answer (not yet checked). */
 async function askForJson(system: string, prompt: string, jsonSchema: object): Promise<unknown> {
@@ -20,16 +24,29 @@ async function askForJson(system: string, prompt: string, jsonSchema: object): P
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing from .env');
 
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: AI_MODEL,
-    contents: prompt,
-    config: {
-      systemInstruction: system,
-      responseMimeType: 'application/json',
-      responseJsonSchema: jsonSchema,
-      temperature: 0.2,
-    },
-  });
+  const call = () =>
+    ai.models.generateContent({
+      model: AI_MODEL,
+      contents: prompt,
+      config: {
+        systemInstruction: system,
+        responseMimeType: 'application/json',
+        responseJsonSchema: jsonSchema,
+        temperature: 0.2,
+        abortSignal: AbortSignal.timeout(AI_TIMEOUT_MS),
+      },
+    });
+
+  let response;
+  try {
+    response = await call();
+  } catch (error) {
+    // "High demand" / rate-limit errors are usually brief: wait a moment and try once more.
+    const message = error instanceof Error ? error.message : '';
+    if (!/503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand/i.test(message)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    response = await call();
+  }
   const text = response.text;
   if (!text) throw new Error('The AI returned an empty answer');
   return JSON.parse(text);
