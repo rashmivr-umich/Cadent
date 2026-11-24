@@ -154,10 +154,10 @@ export function SegmentsScreen() {
       )}
 
       {response && (
-        <HStack gap={4} alignItems="flex-start" flexWrap="wrap">
-          {/* Main column */}
-          <VStack gap={5} flexGrow={1} flexBasis={560} maxWidth={720}>
-            <VStack gap={1.5}>
+        <VStack gap={5}>
+          {/* Top: headline on the left, Agent thinking on the right */}
+          <HStack gap={4} alignItems="flex-start" flexWrap="wrap">
+            <VStack gap={1.5} flexGrow={1} flexBasis={480} maxWidth={760}>
               <Text as="p" font="label2" color="fgMuted">
                 Suggested for {intake.userName || 'you'}
               </Text>
@@ -175,11 +175,22 @@ export function SegmentsScreen() {
                 </Banner>
               )}
             </VStack>
+            <VStack flexBasis={300} flexGrow={0} flexShrink={0} width={300}>
+              <AgentThinkingPanel plan={response.plan} />
+            </VStack>
+          </HStack>
 
-            <VStack gap={2}>
-              <Text as="h2" font="title3">
-                Industry segments
-              </Text>
+          {/* Industry segments: cards side by side */}
+          <VStack gap={2}>
+            <Text as="h2" font="title3">
+              Industry segments
+            </Text>
+            <Box
+              display="grid"
+              gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))"
+              gap={2}
+              alignItems="stretch"
+            >
               {visibleSegments.map((s) => (
                 <SegmentCard
                   key={s.naicsCode}
@@ -190,18 +201,21 @@ export function SegmentsScreen() {
                   onDismiss={s.kind === 'suggested' ? () => dismiss(s) : undefined}
                 />
               ))}
-              {lastDismissed && (
-                <HStack gap={1} alignItems="center">
-                  <Text as="span" font="label2" color="fgMuted">
-                    Dismissed {lastDismissed.naicsTitle}.
-                  </Text>
-                  <Button variant="tertiary" compact onClick={undoDismiss}>
-                    Undo
-                  </Button>
-                </HStack>
-              )}
-            </VStack>
+            </Box>
+            {lastDismissed && (
+              <HStack gap={1} alignItems="center">
+                <Text as="span" font="label2" color="fgMuted">
+                  Dismissed {lastDismissed.naicsTitle}.
+                </Text>
+                <Button variant="tertiary" compact onClick={undoDismiss}>
+                  Undo
+                </Button>
+              </HStack>
+            )}
+          </VStack>
 
+          {/* Targeting + continue */}
+          <VStack gap={5} maxWidth={760}>
             <VStack>
               <Text as="h2" font="title3">
                 Targeting
@@ -234,12 +248,7 @@ export function SegmentsScreen() {
               )}
             </VStack>
           </VStack>
-
-          {/* Right column */}
-          <VStack flexBasis={300} flexGrow={0} flexShrink={0} width={300}>
-            <AgentThinkingPanel plan={response.plan} />
-          </VStack>
-        </HStack>
+        </VStack>
       )}
     </VStack>
   );

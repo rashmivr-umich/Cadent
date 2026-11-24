@@ -4,20 +4,20 @@
 
 import { Combobox } from '@coinbase/cds-web/alpha/combobox';
 import { Chip } from '@coinbase/cds-web/chips';
-import { SegmentedControl } from '@coinbase/cds-web/controls';
 import { Icon } from '@coinbase/cds-web/icons';
 import { HStack, VStack } from '@coinbase/cds-web/layout';
+import { SegmentedTabs } from '@coinbase/cds-web/tabs';
 import { Text } from '@coinbase/cds-web/typography';
 import { US_STATES } from '@/lib/usStates';
 import type { SegmentPlan, WhyNowDays } from '@/lib/types';
 import { ConfidenceMeta } from './ConfidenceMeta';
 
 const STATE_OPTIONS = US_STATES.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` }));
-const DAY_OPTIONS = [
-  { value: '30', label: '30 days' },
-  { value: '60', label: '60 days' },
-  { value: '90', label: '90 days' },
-] as const;
+const DAY_TABS = [
+  { id: '30', label: '30 days' },
+  { id: '60', label: '60 days' },
+  { id: '90', label: '90 days' },
+];
 
 type Props = {
   targeting: SegmentPlan['targeting'];
@@ -85,13 +85,17 @@ export function TargetingSection(props: Props) {
         <Text as="p" font="body" color="fgMuted">
           Registration renews within {days} days
         </Text>
-        <HStack>
-          <SegmentedControl
-            options={DAY_OPTIONS}
-            value={String(days)}
-            onChange={(value: string) => onDaysChange(Number(value) as WhyNowDays)}
-          />
-        </HStack>
+        <SegmentedTabs
+          accessibilityLabel="Registration renews within"
+          tabs={DAY_TABS}
+          activeTab={DAY_TABS.find((t) => t.id === String(days)) ?? null}
+          onChange={(tab) => tab && onDaysChange(Number(tab.id) as WhyNowDays)}
+          width={360}
+          equalWidth
+          padding={0.5}
+          borderRadius={400}
+          styles={{ activeIndicator: { borderRadius: 'var(--borderRadius-300)' } }}
+        />
       </Row>
 
       <Row

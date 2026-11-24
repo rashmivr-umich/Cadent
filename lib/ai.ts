@@ -65,7 +65,9 @@ ${ALLOWED_NAICS.map((n) => `  ${n.code}: ${n.title}`).join('\n')}
 - Size is always "Small business": SAM.gov only gives a small-business yes/no per industry code. Never output headcount or revenue.
 - Never invent companies, counts or statistics.
 - confidence is a number from 0 to 1. inferredFrom is one of: "your description", "your past clients", "SAM.gov data", "workspace settings".
-- Every reasoning is one short, plain sentence. summary is one plain sentence about who Maria should target.
+- Every reasoning is one short, plain sentence, addressed to Maria as "you" (never "Maria").
+- summary is a short, direct instruction that starts with "Target" (max 18 words, no names, no "should").
+  Example: "Target small government IT contractors in Virginia whose SAM registrations are expiring soon"
 - agentSteps: 3 to 6 short plain sentences describing what you looked at and decided, in order.`;
 
 const SOURCE_ENUM = ['your description', 'your past clients', 'SAM.gov data', 'workspace settings'];

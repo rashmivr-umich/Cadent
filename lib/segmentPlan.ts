@@ -26,6 +26,13 @@ function statesFromIntake(intake: IntakeData): string[] {
   );
 }
 
+/** Keeps the headline short and direct: "Maria should target X." → "Target X". */
+function tidySummary(summary: string): string {
+  let s = summary.trim().replace(/[.!]+$/, '');
+  s = s.replace(/^(maria|you|the consultant)\s+(should|could|can|needs to|ought to)\s+/i, '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // ---------- 1. Clean the AI's answer ----------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +78,7 @@ export function cleanSegmentPlan(raw: any, intake: IntakeData): SegmentPlan {
     .filter(Boolean) as string[];
 
   return {
-    summary: asText(raw?.summary, 'Small government contractors in your industry segments.'),
+    summary: tidySummary(asText(raw?.summary, 'Target small government contractors in your industry segments.')),
     segments,
     targeting: {
       states: {
@@ -130,7 +137,7 @@ export function buildFallbackPlan(intake: IntakeData): SegmentPlan {
   const hasPastClients = intake.pastClients.length > 0;
 
   return {
-    summary: `Small IT government contractors in ${states.map(stateName).join(', ')} whose SAM.gov registration renews soon.`,
+    summary: `Target small government IT contractors in ${states.map(stateName).join(' and ')} whose SAM registrations are expiring soon`,
     segments: [
       segment(primaryCode, 'primary', 0.6, 'Your description mentions IT contractors, which maps to this code.'),
       ...suggestedCodes
