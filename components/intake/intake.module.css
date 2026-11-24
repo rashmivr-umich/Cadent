@@ -1,0 +1,41 @@
+/*
+  Only the few things CDS props can't express.
+  The highlight box works by stacking two layers in the same spot:
+  - .overlay (behind): the same text, invisible, with colored marks behind key words
+  - .textarea (in front): the real text box, with a see-through background
+  Both must wrap text exactly the same way, so they share these rules.
+*/
+
+.overlay,
+.textarea {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  letter-spacing: normal;
+}
+
+.overlay {
+  color: transparent;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.overlay mark {
+  color: transparent;
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  border: 0;
+  resize: vertical;
+}
+
+.tall {
+  min-height: 160px;
+}
+
+/* Hidden file picker; a CDS Button opens it. */
+.hiddenFileInput {
+  display: none;
+}

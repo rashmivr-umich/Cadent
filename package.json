@@ -1,0 +1,26 @@
+{
+  "name": "cadent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100"
+  },
+  "dependencies": {
+    "@coinbase/cds-icons": "^5",
+    "@coinbase/cds-illustrations": "^4",
+    "@coinbase/cds-web": "^9",
+    "framer-motion": "^10",
+    "next": "15.4.8",
+    "react": "19.1.2",
+    "react-dom": "19.1.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "~5.9.2"
+  }
+}

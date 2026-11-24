@@ -1,3 +1,5 @@
+@.claude/rules/cds.md
+
 # Cadent: Project Context
 
 Read this whole file before writing any code. It is the source of truth for this project.
