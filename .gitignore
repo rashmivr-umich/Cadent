@@ -159,3 +159,4 @@ vite.config.ts.timestamp-*
 # Real SAM.gov data: never push (personal info, no bulk export). Lives locally and in Moss.
 data/
 docs/sample_lead.csv
+.DS_Store
