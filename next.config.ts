@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Moss uses a native (computer-specific) module: let Node load it directly instead of bundling it.
+  serverExternalPackages: ['@moss-js/moss'],
 };
 
 export default nextConfig;

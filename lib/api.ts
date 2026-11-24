@@ -11,7 +11,15 @@ import type {
   SegmentPlanResponse,
 } from './types';
 
-export type LeadsResult = { leads: Lead[]; isSample: boolean };
+export type LeadsResult = {
+  leads: Lead[];
+  isSample: boolean;
+  /** Plain-language error from the server (e.g. "MOSS_PROJECT_ID is not set in .env"). */
+  error?: string;
+  /** Leads that match the segments but renew later than the chosen window. */
+  hiddenByDays?: number;
+  totalInIndex?: number;
+};
 export type EnrichLeadResult = EnrichResult & { isSample: boolean };
 
 // ---------- Segments (our AI route) ----------
@@ -59,14 +67,21 @@ export async function getLeads(filters: LeadFilters): Promise<LeadsResult> {
   });
   try {
     const res = await fetch(`/api/leads?${params}`);
-    if (res.ok) {
-      const body = await res.json();
-      // Accept either a plain list or { leads: [...] }.
-      const leads = (Array.isArray(body) ? body : body.leads) as Lead[] | undefined;
-      if (Array.isArray(leads)) return { leads, isSample: false };
+    const body = await res.json().catch(() => null);
+    if (res.ok && Array.isArray(body?.leads)) {
+      return {
+        leads: body.leads as Lead[],
+        isSample: false,
+        hiddenByDays: body.hiddenByDays,
+        totalInIndex: body.totalInIndex,
+      };
+    }
+    // The endpoint exists but reported a problem: show its message, don't hide it behind samples.
+    if (res.status !== 404) {
+      return { leads: [], isSample: false, error: body?.error ?? `Couldn't load leads (${res.status})` };
     }
   } catch {
-    // Endpoint not there yet: use sample data below.
+    // Network problem: fall through to sample data.
   }
   return { leads: await getSampleLeads(), isSample: true };
 }

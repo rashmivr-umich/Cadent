@@ -1,8 +1,8 @@
 'use client';
 
 // The email states every lead screen uses:
-// "Finding email…" → "Verified" / "Risky" / "Unknown" badge (tooltip: confidence),
-// or "No email found" / "No website found".
+// "Not checked" (before Enrich) → "Finding email…" → "Verified" / "Risky" / "Unknown" badge
+// (tooltip: confidence), or "No email found" / "No website found".
 
 import { Tooltip } from '@coinbase/cds-web/overlays';
 import { HStack } from '@coinbase/cds-web/layout';
@@ -12,6 +12,7 @@ import { Text } from '@coinbase/cds-web/typography';
 import type { EmailStatus } from '@/lib/types';
 
 export type EmailUiState =
+  | { kind: 'notChecked' }
   | { kind: 'finding' }
   | { kind: 'found'; status: EmailStatus; confidence: number | null }
   | { kind: 'noEmail' }
@@ -32,6 +33,13 @@ export function EmailStatusBadge({ state }: { state: EmailUiState }) {
           Finding email…
         </Text>
       </HStack>
+    );
+  }
+  if (state.kind === 'notChecked') {
+    return (
+      <Tag colorScheme="gray" emphasis="low">
+        Not checked
+      </Tag>
     );
   }
   if (state.kind === 'noEmail' || state.kind === 'noWebsite') {

@@ -29,10 +29,12 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | Shared types | `lib/types.ts` | `IntakeData`, `SegmentPlan`, `TargetingChoices`, `Lead`, … |
 | Allowed industry codes | `lib/naics.ts` | The 6 NAICS codes the AI may suggest |
 | Shared state | `lib/IntakeContext.tsx` | Intake answers + Segments choices (React context + sessionStorage) |
-| `/leads` | `app/leads/page.tsx` | Placeholder showing saved choices; real leads table is next |
+| `GET /api/leads` | `app/api/leads/route.ts` | Real leads from Moss, filtered by `naics` / `states` / `whyNowDays`, scored + sorted |
+| Moss reader | `lib/moss.ts` | Read-only: `getAllLeads()`, `getLeadById(id)` (via `getDocs`, cached 1 min) |
+| Fit score | `lib/leadScore.ts` | Days to expiry, fit score, tier, score reasons, signal text (no AI) |
+| Leads table | `app/leads`, `components/leads/` | CDS table: company, location, industry, why now, fit + tier, email badge, source + copy |
 
-**Next to build:** `GET /api/leads` from Moss + the real leads table, then lead detail, enrich,
-draft, approval queue, board, analytics (in that order).
+**Next to build:** lead detail, enrich, draft, approval queue, board, analytics (in that order).
 
 ---
 
@@ -52,8 +54,8 @@ draft, approval queue, board, analytics (in that order).
 `scripts/`, everything in `data/`. Our own files in `lib/` (`ai.ts`, `api.ts`, `types.ts`, …) are fine to edit.
 
 **What does NOT exist yet (you build it):**
-- `GET /api/leads`, `GET /api/leads/[id]`, and the `/enrich`, `/draft`, `/approve` routes (Part 3).
-  The Moss index was built by a script, not by the app. It's `/api/leads`, not `/api/search`.
+- `GET /api/leads/[id]`, and the `/enrich`, `/draft`, `/approve` routes (Part 3).
+  (`GET /api/leads` is built. It's `/api/leads`, not `/api/search`.)
 
 **Moss facts:**
 - Index name: **`leads`**. Use the same `MOSS_PROJECT_ID` / `MOSS_PROJECT_KEY` Roshni sent you.
@@ -158,7 +160,7 @@ Screens call these only through `lib/api.ts`.
 | Endpoint | Status | What it does | Uses | Sends | Returns |
 |---|---|---|---|---|---|
 | `POST /api/segments` | **Built** | Intake → segment plan (profile step) | Gemini via `lib/ai.ts` | `IntakeData` | `{ plan: SegmentPlan, source, fallbackReason? }` |
-| `GET /api/leads` | To build | List leads for the Segments choices | Moss | query: `naics`, `states`, `whyNowDays` | `{ leads: Lead[] }` |
+| `GET /api/leads` | **Built** | List leads for the Segments choices | Moss | query: `naics`, `states`, `whyNowDays` | `{ leads: Lead[], totalInIndex, matchedSegments, hiddenByDays }` |
 | `GET /api/leads/[id]` | To build | One lead | Moss | – | `Lead` |
 | `POST /api/leads/[id]/enrich` | To build | Website + email | Tavily, Hunter | – | `{ website, email, emailStatus, emailConfidence }` |
 | `POST /api/leads/[id]/draft` | To build | Write outreach email | Gemini via `lib/ai.ts` | – | `{ draftSubject, draftBody, agentUnsure[], agentSteps[] }` |
@@ -169,8 +171,10 @@ Reject, board moves and analytics happen in the browser (`localStorage`), with n
 Build `GET /api/leads` first and check it returns 10 leads before anything else.
 
 **`/api/leads` filters** come from the Segments screen choices (`TargetingChoices` in `lib/types.ts`):
-`naics` = selected industry codes (comma-separated), `states` = selected state codes
-(comma-separated), `whyNowDays` = 30, 60 or 90 (registration expires within that many days).
+`naics` = selected industry codes (comma-separated; a lead matches if its primary code or any of
+its other codes is picked), `states` = selected state codes (comma-separated),
+`whyNowDays` = 30, 60 or 90 (registration expires within that many days, not already expired).
+Leads come back best fit first. `hiddenByDays` = leads that match but renew later than the window.
 
 ### How each tool is used
 
@@ -190,8 +194,12 @@ const leads = res.docs.map(d => ({ ...JSON.parse(d.metadata.lead), matchScore: d
 - Recalculate `daysToExpiry` from `registrationExpirationDate` on every request (it changes daily).
 - Moss uses a native module: in `next.config`, set `serverExternalPackages: ["@moss-js/moss"]`
   and use the Node.js runtime (not Edge) for these routes.
-- Fit score / tier: calculate in the leads endpoint, e.g. more points the sooner it expires,
-  plus points for primary NAICS match and small-business status. Tier A ≥ 75, B ≥ 50, else C.
+- How we read it: `lib/moss.ts` uses `getDocs("leads")` (all 10 docs, no `loadIndex` needed) and
+  filters in code. Switch to `query()` only if we add free-text search later.
+- Fit score / tier (`lib/leadScore.ts`, no AI): expiry ≤30 days 40–50 pts (sooner = more),
+  ≤60 days 35, ≤90 days 20, later 5, expired 0; primary NAICS picked 30 pts (another listed
+  code picked 15); small business for that code 20. Tier A ≥ 75, B ≥ 50, else C.
+  `next.config.ts` already sets `serverExternalPackages: ["@moss-js/moss"]`; the route uses the Node.js runtime.
 
 **Gemini (segments + draft).** All calls go through `lib/ai.ts` (one function per AI task), which
 uses Google's official SDK `@google/genai` (already installed) and `process.env.GEMINI_MODEL`
