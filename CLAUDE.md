@@ -79,11 +79,11 @@ Read this whole file before writing any code. It is the source of truth for this
 ## 3. The user flow (build this, in this order)
 
 1. **Intake:** Maria types her service in plain words. Example: "I help small government IT contractors keep their certifications and SAM registration accurate."
-2. **ICP:** Claude turns it into a structured profile: NAICS codes, size, state, decision-maker titles, trigger events. Each field has a confidence score 0.00–1.00. Maria can accept or edit.
+2. **ICP:** Gemini turns it into a structured profile: NAICS codes, size, state, decision-maker titles, trigger events. Each field has a confidence score 0.00–1.00. Maria can accept or edit.
 3. **Discovery:** Pull matching entities from SAM.gov (cached). Each lead shows a source link to its SAM.gov record.
 4. **Signals:** Compute "why now" from public dates: registration expiration within N days, recently registered, etc. Score each lead 0–100 and tier A/B/C.
 5. **Enrichment:** Use Tavily to find the company website, Hunter.io to find a work email at that domain. Show verification status inline.
-6. **Outreach draft:** Claude writes a short, helpful email that names the real signal and links the source. Tone: offer help and a free review, never "we'll manage your account."
+6. **Outreach draft:** Gemini writes a short, helpful email that names the real signal and links the source. Tone: offer help and a free review, never "we'll manage your account."
 7. **Approval queue (HITL):** Approve / Edit / Reject per message. Show: why this lead, the source, confidence, what the agent is unsure about. Nothing sends without approval.
 8. **Board:** Kanban: Matched → Contacted → Replied → Meeting Booked → Closed/Lost. Each card shows whether AI or a person moved it, with timestamps.
 9. **Analytics (light):** Counts and conversion per stage.
@@ -120,11 +120,12 @@ Read this whole file before writing any code. It is the source of truth for this
 ## 7. Tech
 
 - Build with Claude Code. Keep it simple and fast.
-- Suggested: Next.js + Tailwind (the brief suggests this). A small API layer for SAM.gov, Tavily, Hunter, Claude, and email.
+- Suggested: Next.js + Tailwind (the brief suggests this). A small API layer for SAM.gov, Tavily, Hunter, Gemini, and email.
+- Agent model: Gemini API (free tier, a Flash model) for ICP, lead scoring and email drafts. Use Google's official Gen AI SDK (`@google/genai` for Node/Next.js).
 - Knowledge graph (Neo4j) is optional. Skip unless the core works early.
 - Deploy to Vercel if time allows.
 - Environment variables (`.env`):
-  - `ANTHROPIC_API_KEY`
+  - `GEMINI_API_KEY`
   - `SAM_API_KEY`
   - `TAVILY_API_KEY`
   - `HUNTER_API_KEY`
