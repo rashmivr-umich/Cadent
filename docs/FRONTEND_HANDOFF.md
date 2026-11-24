@@ -150,7 +150,7 @@ Test each endpoint and show me it works before moving to the next.
 1. In Terminal, in the Cadent folder (work on your current branch, `rashmi`; don't make a new branch):
    - `git fetch origin` then `git merge origin/roshni/backend` (brings in Roshni's Moss scripts and the email sender)
    - `npm install`
-   - Check: `npm test` shows `pass 7`, and `node --env-file=.env scripts/moss-list.mjs` shows
+   - Check: `npm test` shows `pass 8`, and `node --env-file=.env scripts/moss-list.mjs` shows
      the `leads` index (do this after step 2, once `.env` is filled in).
 2. **`.env`** (main Cadent folder, next to `package.json`): copy `.env.example` to `.env` and fill
    in your values, one per line, `NAME=value`, no quotes or spaces. `.env` is already ignored by git.
