@@ -26,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const nav = [
     { href: '/leads', label: 'Leads' },
     { href: '/queue', label: toReview ? `Approval queue (${toReview})` : 'Approval queue' },
+    { href: '/board', label: 'Board' },
   ];
 
   return (

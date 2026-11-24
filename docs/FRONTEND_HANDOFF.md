@@ -41,9 +41,13 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | Lead detail | `app/leads/[id]`, `components/leads/LeadDetail.tsx` | Contact + Find email, Draft email, company facts, data freshness, source, Agent thinking |
 | Approval queue | `app/queue`, `components/queue/` | To review / Sent / Rejected; Approve & send, Edit, Reject |
 | Lead work store | `lib/PipelineContext.tsx` | Email lookup, draft, edits, approval, stage + history in `localStorage` (`cadent.pipeline`) |
-| Header nav | `components/layout/AppShell.tsx` | "Leads" and "Approval queue (n)" links |
+| Header nav | `components/layout/AppShell.tsx` | "Leads", "Approval queue (n)" and "Board" links |
+| Board | `app/board`, `components/board/` | Matched → Contacted → Replied → Meeting Booked → Closed → Lost; "Move to…" menu + drag-and-drop; click a card for its history (audit log) |
+| Analytics | `components/board/BoardAnalytics.tsx` + `lib/pipelineStats.ts` | On the board: count per stage, conversion between steps, moves by AI vs person, breakdown by fit and by industry |
+| "Show N more leads" button | `components/leads/LeadsScreen.tsx` | **Placeholder only** (does nothing yet); Moss has just 10 leads |
 
-**Next to build:** board, then analytics.
+**Next to build:** nothing planned from the original list. Remaining deliverables: README setup docs,
+demo video, final architecture write-up. Who builds what next is still to be confirmed with Roshni.
 
 **Keys:** `TAVILY_API_KEY`, `HUNTER_API_KEY` (Find email), `RESEND_API_KEY`, `DEMO_RECIPIENT`
 (Approve & send) are set in Rashmi's `.env` and tested live on Nov 24 (one Hunter lookup, one
@@ -68,8 +72,9 @@ Tavily search, one test email to the demo inbox). Without them the screens show 
 `scripts/`, everything in `data/`. Our own files in `lib/` (`ai.ts`, `api.ts`, `types.ts`, …) are fine to edit.
 
 **What does NOT exist yet (you build it):**
-- Board and analytics (both read `lib/PipelineContext.tsx`; no endpoints needed).
-  All six endpoints in Part 3 are built. It's `/api/leads`, not `/api/search`.
+- Nothing from the original screen list: board and analytics are built (both read
+  `lib/PipelineContext.tsx`; no endpoints). All six endpoints in Part 3 are built.
+  It's `/api/leads`, not `/api/search`.
 
 **Moss facts:**
 - Index name: **`leads`**. Use the same `MOSS_PROJECT_ID` / `MOSS_PROJECT_KEY` Roshni sent you.
@@ -213,8 +218,9 @@ const leads = res.docs.map(d => ({ ...JSON.parse(d.metadata.lead), matchScore: d
 - Fit score / tier (`lib/leadScore.ts`, no AI): expiry ≤30 days 40–50 pts (sooner = more),
   ≤60 days 35, ≤90 days 20, later 5, expired 0; primary NAICS picked 30 pts (another listed
   code picked 15); small business for that code 20. Tier A ≥ 75, B ≥ 50, else C.
-  **On screen, tiers are plain words** (`FIT_LABELS`): A = "Strong fit", B = "Good fit", C = "Weak fit".
-  Never show "Tier A" to Maria.
+  **On screen** (`fitText` in `lib/leadScore.ts`): plain words plus the tier letter the brief asks for:
+  "Strong fit · A", "Good fit · B", "Weak fit · C", next to the 0–100 score where there's room
+  (leads table, lead detail, approval queue, board).
   `next.config.ts` already sets `serverExternalPackages: ["@moss-js/moss"]`; the route uses the Node.js runtime.
 
 **Gemini (segments + draft).** All calls go through `lib/ai.ts` (one function per AI task), which
@@ -255,6 +261,14 @@ const r = await sendDemoEmail({ subject, body, leadName: lead.legalName }); // n
 
 **Board stage, approvals, history:** keep them in the browser's `localStorage` for the demo
 (simple, no database). Every move adds `{ stage, movedBy: "person" | "ai", at }` to `stageHistory`.
+Built in `lib/PipelineContext.tsx`, key **`cadent.pipeline`** = `{ [leadId]: LeadWork }`, where
+`LeadWork` = `{ lead, enrichment?, draft?, edited?, approval, sent?, stage, stageHistory }`.
+The board didn't change this format. Rules: every lead from `GET /api/leads` gets a record starting
+in "Matched" (moved by AI) if it has none; approving an email moves it to "Contacted" (moved by
+person); everything else moves only when Maria moves it. Nothing invents replies or meetings.
+Analytics (`lib/pipelineStats.ts`): conversion = leads that ever reached the next step ÷ leads that
+ever reached this step (on Matched → Contacted → Replied → Meeting Booked → Closed; Lost is counted
+separately). "Moves by AI" includes the initial match.
 
 ### `Lead` shape (example values are made up)
 ```json
@@ -296,8 +310,8 @@ days, contact titles, size), plus `agentSteps`. Maria's final picks are saved as
 | Leads table | logo + legalName, dbaName (grey line, hidden if it repeats the name), "City, ST", primaryNaicsName (code in tooltip), "SAM.gov registration · Expires in N days · date", fitScore + fit label, emailStatus badge, "Source Link" column (copy-UEI button only) | logo → company initials; dbaName hidden; email badge "Not looked up yet" |
 | Lead detail (**built**) | above + naicsList, productsAndServices, businessTypes (tags), dates, "Data freshness", website, contact + title, Find email, Draft email, collapsible "Agent thinking" (scoreReasons, agentSteps, agentUnsure) | website "No website found"; productsAndServices hidden; email "Not looked up yet" → "Finding email…" → badge / "No email found" / "No website found" |
 | Approval queue (**built**) | contact, email + badge, signals, subject + body (Edit makes them editable), agentUnsure, source, Approve & send / Edit / Reject; tabs To review / Sent / Rejected | "Drafting…" on the lead page; send errors shown as "Not sent · {reason}" |
-| Board | cards: legalName, tier, stage, last move ("Moved by AI · 2:15 PM") | – |
-| Analytics | count + conversion per stage | 0 |
+| Board (**built**) | cards: legalName, "Strong fit · A · 97", days to expiry, last move ("Moved by AI · 2:15 PM" / "Moved by Maria · 2:31 PM"), Move to…; click → history modal with Open lead | column "No leads" |
+| Analytics (**built**, on the board) | count + conversion per stage, moves by AI vs person, breakdown by fit and industry | 0 (conversion "—" when nothing to divide by) |
 
 **Source citation:** show `Source: SAM.gov · UEI {samSource.uei}` with a copy button
 (in the leads table, only the copy button, under a "Source Link" header; the UEI is in its tooltip).

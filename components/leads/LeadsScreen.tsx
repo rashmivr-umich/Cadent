@@ -110,7 +110,17 @@ export function LeadsScreen() {
           </Text>
 
           {count > 0 ? (
-            <LeadsTable leads={result.leads} />
+            <>
+              <LeadsTable leads={result.leads} />
+              {/* Placeholder for now: doesn't load anything yet (only 10 leads exist in Moss). */}
+              <HStack justifyContent="center" paddingTop={1}>
+                <Button variant="secondary" endIcon="caretDown">
+                  {result.hiddenByDays
+                    ? `Show ${result.hiddenByDays} more lead${result.hiddenByDays === 1 ? '' : 's'} that renew later`
+                    : 'View more leads'}
+                </Button>
+              </HStack>
+            </>
           ) : (
             <VStack gap={1} padding={4} bordered borderRadius={400} alignItems="center">
               <Text as="p" font="headline">

@@ -17,7 +17,7 @@ import { EmailStatusBadge } from '@/components/leads/EmailStatusBadge';
 import { SourceCitation } from '@/components/leads/SourceCitation';
 import { approveEmail } from '@/lib/api';
 import { emailUiState, expiryText, formatDate, nameCase } from '@/lib/leadFormat';
-import { FIT_LABELS } from '@/lib/leadScore';
+import { FIT_LABELS, fitText } from '@/lib/leadScore';
 import { usePipeline, type LeadWork } from '@/lib/PipelineContext';
 import styles from '@/components/intake/intake.module.css';
 
@@ -79,7 +79,7 @@ export function QueueCard({ item }: { item: LeadWork }) {
               </Text>
               {fit && (
                 <Text as="span" font="label2" color="fgMuted">
-                  {fit.label} · {lead.fitScore}
+                  {fitText(lead.tier!)} · {lead.fitScore}
                 </Text>
               )}
             </VStack>

@@ -14,7 +14,7 @@ import { Text } from '@coinbase/cds-web/typography';
 import { draftEmail, enrichLead, getLead } from '@/lib/api';
 import { useIntake } from '@/lib/IntakeContext';
 import { cityCase, emailUiState, expiryText, formatDate, nameCase, showDba } from '@/lib/leadFormat';
-import { FIT_LABELS } from '@/lib/leadScore';
+import { FIT_LABELS, fitText } from '@/lib/leadScore';
 import { usePipeline } from '@/lib/PipelineContext';
 import type { Lead } from '@/lib/types';
 import { CompanyLogo } from './CompanyLogo';
@@ -155,7 +155,7 @@ export function LeadDetail({ leadId }: { leadId: string }) {
               {lead.fitScore}
             </Text>
             <Tag colorScheme={fit.colorScheme} emphasis="low">
-              {fit.label}
+              {fitText(lead.tier!)}
             </Tag>
           </VStack>
         )}

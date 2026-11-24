@@ -12,7 +12,7 @@ import { Tag } from '@coinbase/cds-web/tag';
 import { Text } from '@coinbase/cds-web/typography';
 import { useRouter } from 'next/navigation';
 import type { Lead } from '@/lib/types';
-import { FIT_LABELS } from '@/lib/leadScore';
+import { FIT_LABELS, fitText } from '@/lib/leadScore';
 import { cityCase, emailUiState, expiryText, formatDate, showDba } from '@/lib/leadFormat';
 import { usePipeline } from '@/lib/PipelineContext';
 import { CompanyLogo } from './CompanyLogo';
@@ -87,7 +87,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                   </Text>
                   {lead.tier && (
                     <Tag colorScheme={FIT_LABELS[lead.tier].colorScheme} emphasis="low">
-                      {FIT_LABELS[lead.tier].label}
+                      {fitText(lead.tier)}
                     </Tag>
                   )}
                 </HStack>
