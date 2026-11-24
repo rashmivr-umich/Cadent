@@ -10,24 +10,31 @@ yearly, and a lapse can stop payments or cost an award. Cadent finds contractors
 records, spots a dated reason to reach out (e.g. "registration expires in 8 days"), drafts a
 helpful email that cites the source, and **sends nothing until the consultant approves it**.
 
-## What it does
+## What it does (screen flow)
 
-1. **Intake:** the consultant describes their service in plain words.
-2. **Ideal customer profile:** Gemini turns it into industries (NAICS), states, decision-maker
-   titles and trigger events, each with a confidence score. Everything is editable.
-3. **Leads:** real contractors from the official SAM.gov API, searched with Moss, ranked by a
-   0–100 fit score (tier A/B/C) driven by how soon the registration expires.
-4. **Contact lookup:** Tavily finds the company website, then Hunter finds and verifies a work email.
-5. **Draft:** Gemini writes a short email naming the real date and citing the SAM.gov record (UEI).
-6. **Approval queue:** Approve, Edit or Reject. Nothing sends without approval.
-7. **Board + analytics:** Matched → Contacted → Replied → Meeting Booked → Closed/Lost, showing
-   whether the agent or a person moved each lead.
+1. **Intake** `/intake`: the consultant describes their service in plain words (key words are
+   highlighted as they type), adds past clients (Excel/CSV/paste) and pricing.
+2. **Segments** `/segments`: Gemini suggests industries (NAICS), states, a 30/60/90-day renewal
+   window and contact titles, each with a confidence score and the reason. Everything is editable.
+3. **Leads** `/leads`: real contractors from the official SAM.gov API, read from Moss and filtered by
+   those choices, with a **Moss search box** on top. Ranked by a 0–100 fit score ("Strong fit · A")
+   driven by how soon the registration expires. Every lead cites its SAM.gov UEI.
+4. **Prepare outreach:** tick leads (or "Select top 5", max 10) and click **Prepare outreach**. For each
+   lead, Tavily finds the website and Hunter finds and verifies a work email, then Gemini drafts a
+   short email naming the real date and citing the SAM.gov record. (Also available one lead at a time
+   on the lead's page.)
+5. **Queue** `/queue`: Approve & send, Edit or Reject each draft, or **Approve & send all** after a
+   confirmation. Nothing sends without approval.
+6. **Board** `/board` + analytics: Matched → Contacted → Replied → Meeting Booked → Closed → Lost,
+   showing whether the agent or a person moved each lead (click a card for its history), with counts
+   and conversion per stage. Gear menu → "Reset demo board" starts the demo clean.
 
-Design and data flow: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+Design and data flow: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** ·
+Build guide and current state: [docs/FRONTEND_HANDOFF.md](docs/FRONTEND_HANDOFF.md)
 
 ## Tech
 
-Next.js (App Router) · Gemini (`@google/genai`) · Moss (`@moss-js/moss`) · SAM.gov Entity API ·
+Next.js (App Router) · Coinbase Design System (`@coinbase/cds-web`) · Gemini (`@google/genai`) · Moss (`@moss-js/moss`) · SAM.gov Entity API ·
 Tavily · Hunter · Resend
 
 ## Run it locally

@@ -65,7 +65,7 @@ Tavily search, one test email to the demo inbox). Without them the screens show 
 |---|---|---|
 | Moss index | Roshni's Moss project, name **`leads`** | 10 real Virginia leads, model `moss-minilm`, status Ready |
 | Email sender | `lib/demo-email.mjs` | `sendDemoEmail({ subject, body, leadName })`, the only allowed way to send. Tested. |
-| Email safety tests | `lib/demo-email.test.mjs` | Run with `npm test`. Must show `pass 7`, `fail 0`. |
+| Email safety tests | `lib/demo-email.test.mjs` | Run with `npm test`. Must show `pass 8`, `fail 0` (was 7 before the opt-out test). |
 | Moss check script | `scripts/moss-list.mjs` | Lists the Moss indexes (read only) |
 | Data scripts | `scripts/fetch-sam.mjs`, `clean-leads.mjs`, `moss-build-leads.mjs` | Roshni's. **Don't run them.** They already built the index. |
 | `package.json` | repo root | Has both sides: Next.js + CDS + `@google/genai` (ours) and `"type": "module"`, `@moss-js/moss`, `"test"` (Roshni's) |
@@ -181,7 +181,7 @@ Screens call these only through `lib/api.ts`.
 | Endpoint | Status | What it does | Uses | Sends | Returns |
 |---|---|---|---|---|---|
 | `POST /api/segments` | **Built** | Intake → segment plan (profile step) | Gemini via `lib/ai.ts` | `IntakeData` | `{ plan: SegmentPlan, source, fallbackReason? }` |
-| `GET /api/leads` | **Built** | List leads for the Segments choices | Moss | query: `naics`, `states`, `whyNowDays` | `{ leads: Lead[], totalInIndex, matchedSegments, hiddenByDays }` |
+| `GET /api/leads` | **Built** | List leads for the Segments choices | Moss (`getDocs`; `query` when `q` is set) | query: `naics`, `states`, `whyNowDays`, optional `q` | `{ leads: Lead[], totalInIndex, matchedSegments, hiddenByDays }` |
 | `GET /api/leads/[id]` | **Built** | One lead | Moss | query (optional): `naics` | `Lead` |
 | `POST /api/leads/[id]/enrich` | **Built** | Website + email | Tavily, Hunter | – | `{ website, websiteSource, email, emailStatus, emailConfidence, agentUnsure[] }` |
 | `POST /api/leads/[id]/draft` | **Built** | Write outreach email | Gemini via `lib/ai.ts` | optional `{ sender: {name, firm, service}, enrichment }` | `{ draftSubject, draftBody, agentUnsure[], agentSteps[], source: "ai" \| "fallback" }` |
@@ -215,8 +215,11 @@ const leads = res.docs.map(d => ({ ...JSON.parse(d.metadata.lead), matchScore: d
 - Recalculate `daysToExpiry` from `registrationExpirationDate` on every request (it changes daily).
 - Moss uses a native module: in `next.config`, set `serverExternalPackages: ["@moss-js/moss"]`
   and use the Node.js runtime (not Edge) for these routes.
-- How we read it: `lib/moss.ts` uses `getDocs("leads")` (all 10 docs, no `loadIndex` needed) and
-  filters in code. Switch to `query()` only if we add free-text search later.
+- How we read it: `lib/moss.ts` uses `getDocs("leads")` (all 10 docs) and filters in code.
+  **Search** (`GET /api/leads?q=…`, search box above the leads table): `searchLeadIds()` calls
+  `loadIndex("leads")` once per server start (~9 s the first time) and then `query("leads", q, { topK: 10 })`
+  (milliseconds); matches above score 0.05 are kept, the segment filters still apply, and results are
+  sorted by match. Read only.
 - Fit score / tier (`lib/leadScore.ts`, no AI): expiry ≤30 days 40–50 pts (sooner = more),
   ≤60 days 35, ≤90 days 20, later 5, expired 0; primary NAICS picked 30 pts (another listed
   code picked 15); small business for that code 20. Tier A ≥ 75, B ≥ 50, else C.
