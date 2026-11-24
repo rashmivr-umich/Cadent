@@ -1,7 +1,8 @@
 'use client';
 
 // Dense, spreadsheet-style table of leads.
-// Columns: company (+ trade name), location, industry (code in tooltip), expires, fit, email, source.
+// Columns: company (logo + name + trade name), location, industry (code in tooltip),
+// why now (SAM.gov registration expiry), fit, email, source link (copy UEI).
 
 import { HStack, VStack } from '@coinbase/cds-web/layout';
 import { Tooltip } from '@coinbase/cds-web/overlays';
@@ -9,10 +10,12 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from '@coinbase/cd
 import { Tag } from '@coinbase/cds-web/tag';
 import { Text } from '@coinbase/cds-web/typography';
 import type { Lead } from '@/lib/types';
+import { FIT_LABELS } from '@/lib/leadScore';
+import { CompanyLogo } from './CompanyLogo';
 import { EmailStatusBadge, type EmailUiState } from './EmailStatusBadge';
 import { SourceCitation } from './SourceCitation';
 
-const TIER_COLORS = { A: 'green', B: 'yellow', C: 'gray' } as const;
+
 
 const emailState = (lead: Lead): EmailUiState =>
   lead.email && lead.emailStatus
@@ -20,7 +23,7 @@ const emailState = (lead: Lead): EmailUiState =>
     : { kind: 'notChecked' };
 
 const expiryText = (days: number) =>
-  days < 0 ? 'Expired' : days === 0 ? 'Today' : `In ${days} day${days === 1 ? '' : 's'}`;
+  days < 0 ? 'Expired' : days === 0 ? 'Expires today' : `Expires in ${days} day${days === 1 ? '' : 's'}`;
 
 // "BRISTOW" → "Bristow" so every city looks the same (SAM.gov data mixes cases).
 const cityCase = (city: string) =>
@@ -30,36 +33,50 @@ const cityCase = (city: string) =>
 const lettersOnly = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 const showDba = (lead: Lead) => !!lead.dbaName && lettersOnly(lead.dbaName) !== lettersOnly(lead.legalName);
 
-const formatDate = (dateText: string) =>
-  new Date(`${dateText}T00:00:00Z`).toLocaleDateString('en-US', {
+// "Dec 2" this year, "Jan 5, 2027" otherwise.
+const formatDate = (dateText: string) => {
+  const date = new Date(`${dateText}T00:00:00Z`);
+  const sameYear = date.getUTCFullYear() === new Date().getUTCFullYear();
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
     timeZone: 'UTC',
   });
+};
 
 export function LeadsTable({ leads }: { leads: Lead[] }) {
   return (
     <Table bordered variant="ruled" compact>
       <TableHeader>
         <TableRow>
-          <TableCell title="Company" />
-          <TableCell title="Location" />
-          <TableCell title="Industry" />
-          <TableCell title="Why now" />
+          <TableCell title="Company" width="26%" />
+          <TableCell title="Location" width="11%" />
+          <TableCell title="Industry" width="18%" />
+          <TableCell title="Why now" width="20%" />
           <TableCell title="Fit" />
           <TableCell title="Email" />
-          <TableCell title="Source" />
+          <TableCell title="Source Link" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
           <TableRow key={lead.id}>
-            {showDba(lead) ? (
-              <TableCell title={lead.legalName} subtitle={lead.dbaName!} subtitleColor="fgMuted" />
-            ) : (
-              <TableCell title={lead.legalName} />
-            )}
+            <TableCell>
+              <HStack gap={1.5} alignItems="center">
+                <CompanyLogo name={lead.legalName} website={lead.website} size="l" />
+                <VStack>
+                  <Text as="span" font="headline">
+                    {lead.legalName}
+                  </Text>
+                  {showDba(lead) && (
+                    <Text as="span" font="label2" color="fgMuted">
+                      {lead.dbaName}
+                    </Text>
+                  )}
+                </VStack>
+              </HStack>
+            </TableCell>
             <TableCell>
               <Text as="span" font="body">
                 {cityCase(lead.city)}, {lead.state}
@@ -74,6 +91,9 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
             </TableCell>
             <TableCell>
               <VStack>
+                <Text as="span" font="label2" color="fgMuted">
+                  SAM.gov registration
+                </Text>
                 <Text as="span" font="headline" color={lead.daysToExpiry <= 30 ? 'fgNegative' : 'fg'}>
                   {expiryText(lead.daysToExpiry)}
                 </Text>
@@ -89,8 +109,8 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                     {lead.fitScore ?? '—'}
                   </Text>
                   {lead.tier && (
-                    <Tag colorScheme={TIER_COLORS[lead.tier]} emphasis="low">
-                      {`Tier ${lead.tier}`}
+                    <Tag colorScheme={FIT_LABELS[lead.tier].colorScheme} emphasis="low">
+                      {FIT_LABELS[lead.tier].label}
                     </Tag>
                   )}
                 </HStack>
@@ -100,7 +120,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               <EmailStatusBadge state={emailState(lead)} />
             </TableCell>
             <TableCell>
-              <SourceCitation uei={lead.samSource?.uei ?? lead.id} compact />
+              <SourceCitation uei={lead.samSource?.uei ?? lead.id} iconOnly />
             </TableCell>
           </TableRow>
         ))}

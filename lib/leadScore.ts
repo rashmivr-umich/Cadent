@@ -3,11 +3,18 @@
 //   Expiry:   ≤30 days 40–50 pts (sooner = more) · ≤60 days 35 · ≤90 days 20 · later 5 · expired 0
 //   Industry: primary code is one Maria picked 30 pts · picked code in its other codes 15
 //   Size:     small business for the matching code 20 pts
-// Tier: A ≥ 75, B ≥ 50, else C.
+// Tier: A ≥ 75, B ≥ 50, else C. Shown to Maria in plain words (FIT_LABELS), not as "Tier A".
 
 import type { Lead } from './types';
 
 const DAY_MS = 86_400_000;
+
+/** What each tier means on screen. */
+export const FIT_LABELS = {
+  A: { label: 'Strong fit', colorScheme: 'green' },
+  B: { label: 'Good fit', colorScheme: 'yellow' },
+  C: { label: 'Weak fit', colorScheme: 'gray' },
+} as const;
 
 /** Whole days from today (UTC) until the registration expires. Negative = already expired. */
 export function daysUntil(dateText: string, today = new Date()): number {

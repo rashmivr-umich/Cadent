@@ -32,7 +32,8 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | `GET /api/leads` | `app/api/leads/route.ts` | Real leads from Moss, filtered by `naics` / `states` / `whyNowDays`, scored + sorted |
 | Moss reader | `lib/moss.ts` | Read-only: `getAllLeads()`, `getLeadById(id)` (via `getDocs`, cached 1 min) |
 | Fit score | `lib/leadScore.ts` | Days to expiry, fit score, tier, score reasons, signal text (no AI) |
-| Leads table | `app/leads`, `components/leads/` | CDS table: company, location, industry, why now, fit + tier, email badge, source + copy |
+| Leads table | `app/leads`, `components/leads/` | CDS table: logo + company, location, industry, why now, fit, email badge, source link (copy UEI) |
+| `GET /api/logo` | `app/api/logo/route.ts` | Company icon from the company's own website (Moss has no logos); initials otherwise |
 
 **Next to build:** lead detail, enrich, draft, approval queue, board, analytics (in that order).
 
@@ -199,6 +200,8 @@ const leads = res.docs.map(d => ({ ...JSON.parse(d.metadata.lead), matchScore: d
 - Fit score / tier (`lib/leadScore.ts`, no AI): expiry ≤30 days 40–50 pts (sooner = more),
   ≤60 days 35, ≤90 days 20, later 5, expired 0; primary NAICS picked 30 pts (another listed
   code picked 15); small business for that code 20. Tier A ≥ 75, B ≥ 50, else C.
+  **On screen, tiers are plain words** (`FIT_LABELS`): A = "Strong fit", B = "Good fit", C = "Weak fit".
+  Never show "Tier A" to Maria.
   `next.config.ts` already sets `serverExternalPackages: ["@moss-js/moss"]`; the route uses the Node.js runtime.
 
 **Gemini (segments + draft).** All calls go through `lib/ai.ts` (one function per AI task), which
@@ -269,13 +272,14 @@ days, contact titles, size), plus `agentSteps`. Maria's final picks are saved as
 |---|---|---|
 | Intake | Built | – |
 | Segments | Built | Count line: "Not searched yet" |
-| Leads table | legalName, dbaName (grey line), "City, ST", primaryNaicsName (code in tooltip), "Expires in N days", fitScore + tier badge, emailStatus badge, source | dbaName hidden; email badge "Not checked" |
+| Leads table | logo + legalName, dbaName (grey line, hidden if it repeats the name), "City, ST", primaryNaicsName (code in tooltip), "SAM.gov registration · Expires in N days · date", fitScore + fit label, emailStatus badge, "Source Link" column (copy-UEI button only) | logo → company initials; dbaName hidden; email badge "Not looked up yet" |
 | Lead detail | above + naicsList, productsAndServices, businessTypes (tags), dates, "Data freshness", website, contact + title, collapsible "Agent thinking" (scoreReasons, agentSteps) | website "No website found"; productsAndServices hidden |
 | Approval queue | contact, email + badge, signals, editable subject + body, agentUnsure, source, Approve / Edit / Reject | "Drafting…", "Finding email…" then "No email found" |
 | Board | cards: legalName, tier, stage, last move ("Moved by AI · 2:15 PM") | – |
 | Analytics | count + conversion per stage | 0 |
 
-**Source citation:** show `Source: SAM.gov · UEI {samSource.uei}` with a copy button.
+**Source citation:** show `Source: SAM.gov · UEI {samSource.uei}` with a copy button
+(in the leads table, only the copy button, under a "Source Link" header; the UEI is in its tooltip).
 (`samSourceUrl` is null; SAM.gov's public record link format isn't confirmed.)
 
 ---
