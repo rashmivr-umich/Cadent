@@ -39,7 +39,7 @@ Already built on branch `rashmi` (merged into `main`). **Don't re-create or rebu
 | `POST /api/leads/[id]/draft` | `app/api/leads/[id]/draft/route.ts` + `draftOutreach` in `lib/ai.ts` | Gemini email; rules re-checked in code; labeled template if the AI fails |
 | `POST /api/leads/[id]/approve` | `app/api/leads/[id]/approve/route.ts` | Sends only via `sendDemoEmail` (no recipient passed) |
 | Lead detail | `app/leads/[id]`, `components/leads/LeadDetail.tsx` | Contact + Find email, Draft email, company facts, data freshness, source, Agent thinking |
-| Approval queue | `app/queue`, `components/queue/` | To review / Sent / Rejected; Approve & send, Edit, Reject |
+| Approval queue | `app/queue`, `components/queue/` | To review / Sent / Rejected; Approve & send, Edit, Reject; "Approve & send all (N)" (confirmation listing every company, sends one at a time, failures stay in To review) |
 | Lead work store | `lib/PipelineContext.tsx` | Email lookup, draft, edits, approval, stage + history in `localStorage` (`cadent.pipeline`) |
 | Header nav | `components/layout/AppShell.tsx` | "Leads", "Queue" (with a count badge of drafts to review) and "Board" |
 | Prepare outreach | `components/leads/LeadsScreen.tsx`, `lib/usePrepareOutreach.ts`, `components/leads/OutreachProgress.tsx` | Tick leads (or "Select top 5", max 10) → sticky bar "Prepare outreach (N)" → for each lead in turn: enrich (reused if already done) then draft → progress list → goes to the Queue. Main path from Leads to the Queue. |
