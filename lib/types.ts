@@ -139,6 +139,8 @@ export type LeadFilters = {
   naics: string[];
   states: string[];
   whyNowDays: WhyNowDays;
+  /** Optional Moss search text. */
+  q?: string;
 };
 
 export type EnrichResult = {

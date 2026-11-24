@@ -39,6 +39,21 @@ export async function getAllLeads(): Promise<Lead[]> {
   return leads;
 }
 
+let loaded: Promise<unknown> | null = null;
+const MIN_SCORE = 0.05; // below this, Moss is saying "not really a match"
+
+/** Search the index (read only). Returns lead id → match score, best first. */
+export async function searchLeadIds(q: string): Promise<Map<string, number>> {
+  const client = getClient();
+  loaded ??= client.loadIndex(INDEX).catch((e) => {
+    loaded = null; // let the next search try again
+    throw e;
+  });
+  await loaded; // ~9 s the first time per server start, then searches take milliseconds
+  const res = await client.query(INDEX, q, { topK: 10 });
+  return new Map(res.docs.filter((d) => d.score > MIN_SCORE).map((d) => [d.id, d.score]));
+}
+
 export async function getLeadById(id: string): Promise<Lead | null> {
   return (await getAllLeads()).find((lead) => lead.id === id) ?? null;
 }

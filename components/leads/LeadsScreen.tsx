@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Banner } from '@coinbase/cds-web/banner';
 import { Button } from '@coinbase/cds-web/buttons';
+import { SearchInput } from '@coinbase/cds-web/controls';
 import { Box, HStack, VStack } from '@coinbase/cds-web/layout';
 import { Spinner } from '@coinbase/cds-web/loaders';
 import { Tag } from '@coinbase/cds-web/tag';
@@ -27,6 +28,14 @@ export function LeadsScreen() {
   const { hydrated, targeting } = useIntake();
   const [result, setResult] = useState<LeadsResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [query, setQuery] = useState(''); // the search actually run (after a short pause)
+
+  // Search ~400 ms after typing stops.
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(searchText.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
   const outreach = usePrepareOutreach();
 
   const toggle = (id: string) =>
@@ -49,8 +58,9 @@ export function LeadsScreen() {
       naics: targeting.segments.map((s) => s.naicsCode),
       states: targeting.states,
       whyNowDays: targeting.whyNowDays,
+      q: query,
     }).then(setResult);
-  }, [targeting]);
+  }, [targeting, query]);
 
   if (hydrated && !targeting) {
     return (
@@ -107,11 +117,22 @@ export function LeadsScreen() {
         </VStack>
       )}
 
+      {targeting && (
+        <SearchInput
+          accessibilityLabel="Search leads"
+          placeholder="Search leads, e.g. cybersecurity, cloud, Reston"
+          value={searchText}
+          onChangeText={setSearchText}
+          onClear={() => setSearchText('')}
+          compact
+        />
+      )}
+
       {!result && (
         <HStack gap={1.5} alignItems="center">
           <Spinner size={2} />
           <Text as="p" font="body" color="fgMuted">
-            Loading leads from SAM.gov data…
+            {query ? `Searching for “${query}”…` : 'Loading leads from SAM.gov data…'}
           </Text>
         </HStack>
       )}
@@ -134,7 +155,8 @@ export function LeadsScreen() {
 
           <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
             <Text as="p" font="label1" color="fgMuted">
-              {count} lead{count === 1 ? '' : 's'}, best fit first
+              {count} lead{count === 1 ? '' : 's'}
+              {query ? ` matching “${query}”, best match first` : ', best fit first'}
               {result.hiddenByDays
                 ? ` · ${result.hiddenByDays} more renew after ${targeting?.whyNowDays} days`
                 : ''}

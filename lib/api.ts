@@ -65,6 +65,7 @@ export async function getLeads(filters: LeadFilters): Promise<LeadsResult> {
     naics: filters.naics.join(','),
     states: filters.states.join(','),
     whyNowDays: String(filters.whyNowDays),
+    ...(filters.q?.trim() ? { q: filters.q.trim() } : {}),
   });
   try {
     const res = await fetch(`/api/leads?${params}`);
