@@ -1,8 +1,7 @@
 // Front-end API client: the only place screens talk to the server.
-// Roshni owns /api/leads and /api/enrich. Until they exist (or if they fail / 404),
-// we fall back to sample data read from lead.example.json and flag it as sample data,
-// so screens can show a "Sample data" note. Once her endpoints are merged, real data
-// flows through with no screen changes.
+// Endpoint names follow docs/FRONTEND_HANDOFF.md Part 3 (GET /api/leads, POST /api/leads/[id]/enrich, ...).
+// If an endpoint isn't there yet (or fails / 404s), we fall back to sample data read from
+// lead.example.json and flag it as sample data, so screens can show a "Sample data" note.
 
 import type {
   EnrichResult,
@@ -51,12 +50,12 @@ function getSampleLeads(): Promise<Lead[]> {
 
 // ---------- Leads (Roshni's endpoints) ----------
 
-/** GET /api/leads?naics=...&states=...&days=... */
+/** GET /api/leads?naics=...&states=...&whyNowDays=... */
 export async function getLeads(filters: LeadFilters): Promise<LeadsResult> {
   const params = new URLSearchParams({
     naics: filters.naics.join(','),
     states: filters.states.join(','),
-    days: String(filters.days),
+    whyNowDays: String(filters.whyNowDays),
   });
   try {
     const res = await fetch(`/api/leads?${params}`);
@@ -72,14 +71,10 @@ export async function getLeads(filters: LeadFilters): Promise<LeadsResult> {
   return { leads: await getSampleLeads(), isSample: true };
 }
 
-/** POST /api/enrich { leadId } */
+/** POST /api/leads/[id]/enrich */
 export async function enrichLead(leadId: string): Promise<EnrichLeadResult> {
   try {
-    const res = await fetch('/api/enrich', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leadId }),
-    });
+    const res = await fetch(`/api/leads/${encodeURIComponent(leadId)}/enrich`, { method: 'POST' });
     if (res.ok) return { ...((await res.json()) as EnrichResult), isSample: false };
   } catch {
     // Endpoint not there yet: use sample data below.

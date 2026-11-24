@@ -31,7 +31,7 @@ export default function LeadsPlaceholderPage() {
     getLeads({
       naics: targeting.segments.map((s) => s.naicsCode),
       states: targeting.states,
-      days: targeting.whyNowDays,
+      whyNowDays: targeting.whyNowDays,
     }).then(setResult);
   }, [targeting]);
 

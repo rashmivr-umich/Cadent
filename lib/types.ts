@@ -93,8 +93,8 @@ export type TargetingChoices = {
   size: 'Small business';
 };
 
-// ---------- Leads (data comes from Roshni's /api/leads and /api/enrich) ----------
-// Field names follow Roshni's scripts/clean-leads.mjs output (see docs/lead_data_points.csv).
+// ---------- Leads (from GET /api/leads, backed by the Moss "leads" index) ----------
+// Field names follow docs/FRONTEND_HANDOFF.md Part 3 (Lead shape) and scripts/clean-leads.mjs.
 
 export type EmailStatus = 'verified' | 'risky' | 'unknown';
 
@@ -130,13 +130,15 @@ export type Lead = {
   draftBody: string | null;
   agentUnsure: string[];
   stage: string;
-  stageHistory: { stage: string; by: 'ai' | 'person'; at: string }[];
+  matchScore?: number;
+  stageHistory: { stage: string; movedBy: 'ai' | 'person'; at: string }[];
 };
 
+/** Filters for GET /api/leads, taken from the Segments choices. */
 export type LeadFilters = {
   naics: string[];
   states: string[];
-  days: WhyNowDays;
+  whyNowDays: WhyNowDays;
 };
 
 export type EnrichResult = {

@@ -1,5 +1,5 @@
 // All AI calls live in this one file: one function per AI task.
-// To switch to Claude later, change only this file and .env (AI_PROVIDER, AI_MODEL, key).
+// To switch to Claude later, change only this file and .env (AI_PROVIDER, GEMINI_MODEL, key).
 // Runs on the server only (inside API routes), so API keys never reach the browser.
 
 import 'server-only';
@@ -10,8 +10,8 @@ import type { IntakeData, SegmentPlan } from './types';
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'gemini';
 // Default is a fast model (~1 s). Tested Nov 24: gemini-3.8-flash and 3.7-flash took 2+ minutes,
-// gemini-2.5-flash is retired for new keys. Override with AI_MODEL in .env.
-const AI_MODEL = process.env.AI_MODEL || 'gemini-3.5-flash-lite';
+// gemini-2.5-flash is retired for new keys. Override with GEMINI_MODEL in .env.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 // Give up after this long and use the fallback plan, so the demo never hangs.
 const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 30_000;
 
@@ -26,7 +26,7 @@ async function askForJson(system: string, prompt: string, jsonSchema: object): P
   const ai = new GoogleGenAI({ apiKey });
   const call = () =>
     ai.models.generateContent({
-      model: AI_MODEL,
+      model: GEMINI_MODEL,
       contents: prompt,
       config: {
         systemInstruction: system,
